@@ -1,0 +1,40 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-v1-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+     color: black
+  template:
+    metadata:
+      name: my-nginx-v1
+      labels:
+        color: black
+    spec:
+      containers:
+      - name: my-nginx-ctn-v1
+        image: nginx:1.10
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        volumeMounts:
+        - name: nodepath
+          mountPath: /etc/localvol
+        - name: nfspath
+          mountPath: /etc/nfsvol
+
+      volumes:
+      - name: nodepath
+        hostPath:
+          path: /tmp
+      - name: nfspath
+        nfs:
+          path: /k8s
+          server: 211.183.3.99
+
+
+
+
+

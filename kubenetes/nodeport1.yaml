@@ -1,0 +1,18 @@
+﻿apiVersion: v1
+kind: Service
+metadata:
+  name: testnodeport
+spec:
+  ports:
+    - name: test-port
+      port: 8080                #cluster-ip
+      targetPort: 80            #pod
+      nodePort: 31000           #nodePort
+  selector:
+    web: nginx
+  type: NodePort
+
+
+
+
+

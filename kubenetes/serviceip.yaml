@@ -1,0 +1,16 @@
+﻿
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-svc
+spec:
+  ports:
+    - name: webport
+      port: 8080
+      targetPort: 80
+  selector:
+    color: black
+  type: ClusterIP
+
+
+

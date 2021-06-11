@@ -1,0 +1,36 @@
+﻿apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-nfs-pvc
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nfs-mount-container
+spec:
+  containers:
+    - name: nfs-mount-container
+      image: centos:7
+      args: [ "tail", "-f", "/dev/null" ]
+      volumeMounts:
+      - name: nfs-volume
+        mountPath: /mnt
+  volumes:
+  - name: nfs-volume
+    persistentVolumeClaim:
+      claimName: my-nfs-pvc
+
+
+
+
+

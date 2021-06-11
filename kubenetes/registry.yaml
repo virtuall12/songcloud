@@ -1,0 +1,28 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-v1-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+     color: black
+  template:
+    metadata:
+      name: my-nginx-v1
+      labels:
+        color: black
+    spec:
+      containers:
+      - name: my-nginx-ctn-v1
+        image: wnsgur1011/hello8
+        ports:
+        - containerPort: 80
+          protocol: TCP
+      imagePullSecrets:
+      - name: registry-key1
+
+
+
+
+

@@ -1,0 +1,28 @@
+﻿apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: my-first-nginx-rs
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+     color: black
+  template:
+    metadata:
+      name: my-first-nginx
+      labels:
+        color: black
+    spec:
+      containers:
+      - name: my-first-nginx-ctn
+        image: nginx:1.10
+        ports:
+        - containerPort: 80
+          protocol: TCP
+
+      - name: test-ctn
+        image: centos:7
+        command: ["tail"]
+        args: ["-f", "/dev/null"]
+
+

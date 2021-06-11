@@ -1,0 +1,17 @@
+﻿apiVersion: v1
+kind: Pod
+metadata:
+ name: container-env-test
+spec:
+  containers:
+  - name: envctn
+    image: centos:7
+    args: ["tail", "-f", "/dev/null"]
+    envFrom:
+    - configMapRef:
+        name: log-level-cmap
+    - configMapRef:
+        name: start-k8s
+
+
+

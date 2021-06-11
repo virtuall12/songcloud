@@ -1,0 +1,23 @@
+﻿
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-first-nginx-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+     color: black
+  template:
+    metadata:
+      name: my-first-nginx
+      labels:
+        color: black
+    spec:
+      containers:
+      - name: my-first-nginx-ctn
+        image: nginx:1.10
+        ports:
+        - containerPort: 80
+          protocol: TCP
+
