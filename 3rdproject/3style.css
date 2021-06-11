@@ -1,0 +1,345 @@
+
+.dataTable-wrapper.no-header .dataTable-container {
+        border-top: 1px solid #d9d9d9;
+}
+
+.dataTable-wrapper.no-footer .dataTable-container {
+        border-bottom: 1px solid #d9d9d9;
+}
+
+.dataTable-top,
+.dataTable-bottom {
+        padding: 8px 10px;
+}
+
+.dataTable-top > nav:first-child,
+.dataTable-top > div:first-child,
+.dataTable-bottom > nav:first-child,
+.dataTable-bottom > div:first-child {
+        float: left;
+}
+
+.dataTable-top > nav:last-child,
+.dataTable-top > div:last-child,
+.dataTable-bottom > nav:last-child,
+.dataTable-bottom > div:last-child {
+        float: right;
+}
+
+.dataTable-selector {
+        padding: 6px;
+}
+
+.dataTable-input {
+        padding: 6px 12px;
+}
+
+.dataTable-info {
+        margin: 7px 0;
+}
+
+/* PAGER */
+.dataTable-pagination ul {
+        margin: 0;
+        padding-left: 0;
+}
+
+.dataTable-pagination li {
+        list-style: none;
+        float: left;
+}
+
+.dataTable-pagination a {
+        border: 1px solid transparent;
+        float: left;
+        margin-left: 2px;
+        padding: 6px 12px;
+        position: relative;
+        text-decoration: none;
+        color: #333;
+}
+
+.dataTable-pagination a:hover {
+        background-color: #d9d9d9;
+}
+
+.dataTable-pagination .active a,
+.dataTable-pagination .active a:focus,
+.dataTable-pagination .active a:hover {
+        background-color: #d9d9d9;
+        cursor: default;
+}
+
+.dataTable-pagination .ellipsis a,
+.dataTable-pagination .disabled a,
+.dataTable-pagination .disabled a:focus,
+.dataTable-pagination .disabled a:hover {
+        cursor: not-allowed;
+}
+
+.dataTable-pagination .disabled a,
+.dataTable-pagination .disabled a:focus,
+.dataTable-pagination .disabled a:hover {
+        cursor: not-allowed;
+        opacity: 0.4;
+}
+
+.dataTable-pagination .pager a {
+        font-weight: bold;
+}
+
+/* TABLE */
+.dataTable-table {
+        max-width: 100%;
+        width: 100%;
+        border-spacing: 0;
+        border-collapse: separate;
+}
+
+.dataTable-table > tbody > tr > td,
+.dataTable-table > tbody > tr > th,
+.dataTable-table > tfoot > tr > td,
+.dataTable-table > tfoot > tr > th,
+.dataTable-table > thead > tr > td,
+.dataTable-table > thead > tr > th {
+        vertical-align: top;
+        padding: 8px 10px;
+}
+
+.dataTable-table > thead > tr > th {
+        vertical-align: bottom;
+        text-align: left;
+        border-bottom: 1px solid #d9d9d9;
+}
+
+.dataTable-table > tfoot > tr > th {
+        vertical-align: bottom;
+        text-align: left;
+        border-top: 1px solid #d9d9d9;
+}
+
+.dataTable-table th {
+        vertical-align: bottom;
+        text-align: left;
+}
+
+.dataTable-table th a {
+        text-decoration: none;
+        color: inherit;
+}
+
+.dataTable-sorter {
+        display: inline-block;
+        height: 100%;
+        position: relative;
+        width: 100%;
+}
+
+.dataTable-sorter::before,
+.dataTable-sorter::after {
+        content: "";
+        height: 0;
+        width: 0;
+        position: absolute;
+        right: 4px;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        opacity: 0.2;
+}
+
+.dataTable-sorter::before {
+        border-top: 4px solid #000;
+        bottom: 0px;
+}
+
+.dataTable-sorter::after {
+        border-bottom: 4px solid #000;
+        border-top: 4px solid transparent;
+        top: 0px;
+}
+
+.asc .dataTable-sorter::after,
+.desc .dataTable-sorter::before {
+        opacity: 0.6;
+}
+
+.dataTables-empty {
+        text-align: center;
+}
+
+.dataTable-top::after, .dataTable-bottom::after {
+        clear: both;
+        content: " ";
+        display: table;
+}
+
+
+        if( ($_SERVER['REQUEST_METHOD'] == 'POST') && isset($_POST['submit']))
+        {
+
+        foreach ($_POST as $key => $val)
+        {
+            if(preg_match('#^__autocomplete_fix_#', $key) === 1){
+                $n = substr($key, 19);
+                if(isset($_POST[$n])) {
+                    $_POST[$val] = $_POST[$n];
+            }
+        }
+        }
+
+                $username=$_POST['newusername'];
+                $password=$_POST['newpassword'];
+                $confirmpassword=$_POST['newconfirmpassword'];
+                $userprofile=$_POST['newuserprofile'];
+
+             //   if (!validatePassword($password)){
+        //              $errMSG = "잘못된 패스워드";
+          //      }
+
+                if ($_POST['newpassword'] != $_POST['newconfirmpassword']) {
+                        $errMSG = "패스워드가 일치하지 않습니다.";
+                }
+
+                if(empty($username)){
+                        $errMSG = "아이디를 입력하세요.";
+                }
+                else if(empty($password)){
+                        $errMSG = "패스워드를 입력하세요.";
+                }
+                else if(empty($userprofile)){
+                        $errMSG = "프로필을 입력하세요.";
+                }
+
+                try {
+                    $stmt = $con->prepare('select * from users where username=:username');
+                    $stmt->bindParam(':username', $username);
+                    $stmt->execute();
+
+               } catch(PDOException $e) {
+                    die("Database error: " . $e->getMessage());
+               }
+
+               $row = $stmt->fetch();
+               if ($row){
+                    $errMSG = "이미 존재하는 아이디입니다.";
+               }
+
+
+
+                if(!isset($errMSG))
+                {
+                   try{
+                        $stmt = $con->prepare('INSERT INTO users(username, password, userprofile, salt) VALUES(:username, :password, :userprofile, :salt)');
+                        $stmt->bindParam(':username',$username);
+                        $salt = bin2hex(openssl_random_pseudo_bytes(32));
+                        $encrypted_password = base64_encode(encrypt($password, $salt));
+                        $stmt->bindParam(':password', $encrypted_password);
+                        $stmt->bindParam(':userprofile',$userprofile);
+                        $stmt->bindParam(':salt',$salt);
+
+                        if($stmt->execute())
+                        {
+                                $successMSG = "새로운 사용자를 추가했습니다.";
+                                header("refresh:1;index.php");
+                        }
+                        else
+                        {
+                                $errMSG = "사용자 추가 에러";
+                        }
+                     } catch(PDOException $e) {
+                        die("Database error: " . $e->getMessage());
+                     }
+
+
+
+                }
+
+
+        }
+
+
+
+        include('head.php');
+?>
+<!DOCTYPE html>
+<html>
+<body style="background-color:#3399FF">
+<div class="container">
+
+<div>
+    <head>
+    <title>Create Account</title>
+    <h1 class="h1" align="center">&nbsp; Create Account</h1><hr>
+    <link rel="stylesheet" href="bootstrap-3.3.7-dist/css/bootstrap.min.css">
+    </head>
+
+    </div>
+        <?php
+        if(isset($errMSG)){
+                        ?>
+            <div class="alert alert-danger">
+            <span class="glyphicon glyphicon-info-sign"></span> <strong><?php echo $errMSG; ?></strong>
+            </div>
+            <?php
+        }
+        else if(isset($successMSG)){
+                ?>
+        <div class="alert alert-success">
+              <strong><span class="glyphicon glyphicon-info-sign"></span> <?php echo $successMSG; ?></strong>
+        </div>
+        <?php
+        }
+        ?>
+
+<form id="form" method="post" enctype="multipart/form-data" class="form-horizontal" style="margin: 0 300px 0 300px;border: none 1px;border-radius:none">
+        <table class="table table-responsive">
+    <tr>
+        <? $r1 = rmd5(rand().mocrotime(TRUE)); ?>
+        <td><label class="control-label">ID</label></td>
+        <td><input class="form-control" type="text" name="<? echo $r1; ?>" placeholder="enter your ID" autocomplete="off" readonly
+    onfocus="this.removeAttribute('readonly');" />
+            <input type="hidden" name="__autocomplete_fix_<? echo $r1; ?>" value="newusername" />
+
+        </td>
+    </tr>
+    <tr>
+        <? $r2 = rmd5(rand().mocrotime(TRUE)); ?>
+        <td><label class="control-label">Password</label></td>
+        <td>
+            <input class="form-control" type="password" name="<? echo $r2; ?>"  placeholder="enter your PassWord" autocomplete="off" readonly
+                   onfocus="this.removeAttribute('readonly');" />
+            <input type="hidden" name="__autocomplete_fix_<? echo $r2; ?>" value="newpassword" />
+        </td>
+    </tr>
+    <tr>
+        <? $r3 = rmd5(rand().mocrotime(TRUE)); ?>
+        <td><label class="control-label">re PassWord</label></td>
+        <td>
+            <input class="form-control" type="password" name="<? echo $r3; ?>"  placeholder="enter PassWord again" autocomplete="off" readonly
+                   onfocus="this.removeAttribute('readonly');" />
+            <input type="hidden" name="__autocomplete_fix_<? echo $r3; ?>" value="newconfirmpassword" />
+        </td>
+    </tr>
+
+    <tr>
+        <? $r4 = rmd5(rand().mocrotime(TRUE)); ?>
+        <td><label class="control-label">Profile</label></td>
+        <td><input class="form-control" type="text" name="<? echo $r4; ?>" placeholder="enter your Profile" autocomplete="off" readonly
+    onfocus="this.removeAttribute('readonly');" />
+            <input type="hidden" name="__autocomplete_fix_<? echo $r4; ?>" value="newuserprofile" />
+        </td>
+    </tr>
+    <tr>
+        <br>
+        <td colspan="2" align="center">
+       <br>
+       <button type="submit" name="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-floppy-save"></span>&nbsp; SUBMIT</button>
+       </br>
+       </br>
+       </td>
+    </tr>
+    </table>
+</form>
+</div>
+</body>
+</html>
