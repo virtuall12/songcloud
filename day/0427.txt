@@ -1,0 +1,143 @@
+https://gameserverengineer-k.tistory.com/28
+ nginx - php - mysql(mariadb) 연결을 위한 설정(3tier 구조)
+
+ 일반적으로 php 는 2tier 를 구성한다. (httpd+php - db)
+
+실습1. 취미 선택
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<link href="style.css" rel="stylesheet">		<!-- css 파일은 별도로 만들지 않았음 -->
+<body>
+<form name="form1" method="post" action="view5.php">
+	
+	<h3>당신의 취미는?</h3><br>
+	&nbsp;영화감상	<input type="checkbox" name="hobby[]" value="영화감상" checked><br>
+	&nbsp;독서		<input type="checkbox" name="hobby[]" value="독서"><br>	
+	&nbsp;요가		<input type="checkbox" name="hobby[]" value="독서"><br>
+	&nbsp;축구		<input type="checkbox" name="hobby[]" value="독서"><br>	
+	&nbsp;<input type="submit" value="확인">
+</form>
+</body>
+</html>
+
+
+------------- view5.php---------------------------------------------
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="style.css" rel="stylesheet">		<!-- css 파일은 별도로 만들지 않았음 -->
+</head>
+<body>
+
+	나의 취미 :<br>
+	<?php
+		$num = count($_POST["hobby"]);
+		
+		for ($i = 0; $i < $num; $i++) 
+		{
+			echo $_POST["hobby"][$i];
+			if ($i != $num -1)
+				echo ", ";
+		}
+	
+	?>
+</body>
+</html>
+
+
+Quiz-------------------------------------------------------------------
+
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<link href="style.css" rel="stylesheet">		<!-- css 파일은 별도로 만들지 않았음 -->
+<body>
+<form name="form1" method="post" action="view6.php">
+	
+	이메일 : <input type="text" name="email1">@
+		<select name="email2">
+			<option value="" selected>선택하세요</option>
+			<option value="naver.com">naver.com</option>
+			<option value="google.com">google.com</option>
+			<option value="hanmail.net">hanmail.net</option>		
+		</select><br>
+	<input type="submit" value="확인">
+</form>
+</body>
+</html>
+
+------------- view6.php ---------------------
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="style.css" rel="stylesheet">		<!-- css 파일은 별도로 만들지 않았음 -->
+</head>
+<body>
+<?php
+	$email1 = $_POST["email1"];
+	$email2 = $_POST["email2"];
+?>
+	이메일 : <?php echo $email1."@".$email2; ?>
+</body>
+</html>
+
+
+---------------------------- 파일 업로드를 위한 html -----------------------
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<link href="style.css" rel="stylesheet">		<!-- css 파일은 별도로 만들지 않았음 -->
+<body>
+<form name="form1" method="post" action="view8.php" enctype="multipart/form-data">   ❶
+	
+	이미지 업로드 : <input type="file" name="upload"><br>   ❷
+	설명 : <textarea name="comment" rows="3" cols="60"></textarea><br>  ❸
+	<input type="submit" value="확인"> ❹
+</form>
+</body>
+</html>
+
+❶ 파일을 업로드 하기 위해서는 <form> 태그의 encrypte 속성을 multipart/form-data 로 설정한다
+❷ 업로드할 파일을 선택하는 양식을 생성하기 위해 <input> 태그의 type 속성을 file 로 설정한다. name 속성을 upload 로 설정하면 업로드한 파일이 $_POST["upload"] 배열에 저장된다
+❸ 업로드된 이미지에 대한 설명을 입력할 수 있는 텍스트 영역을 생성하기 위해 <textarea> 태그를 사용하고 name 속성은 comment 로 설정한다.
+❹ 확인을 클릭하면 view8.php 파일로 이동한다
+
+
+---------------------- php 파일 ---------------------------------------
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="style.css" rel="stylesheet">		<!-- css 파일은 별도로 만들지 않았음 -->
+</head>
+<body>
+<?php
+	$file_dir = "C:/xampp/htdocs/lab/data/";
+	$file_path = $file_dir.$_FILES["upload"]["name"];
+	if (move_uploaded_file($_FILES["upload"]["tmp_name"], $file_path)) 
+	{
+		$img_path = "lab/data/".$_FILES["upload"]["name"];
+?>
+
+		<img src="<?= $img_path?>"><br>
+		<?= $_POST["comment"]?>
+
+<?php
+	}
+	else
+	{
+			echo "파일 업로드 오류 발생";
+	}
+?>
+</body>
+</html>
+
+172.17.0.2"
+
+
+
+

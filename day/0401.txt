@@ -1,0 +1,241 @@
+서버 가상화(Hyper visor) > 프로젝트(네트워크/리눅스서버/서버가상화) -> 간단한 웹개발(html,css,php,mysql)
+-> 컨테이너 가상화(docker, kubernetes[k8s]) -> openstack -> aws, gcp -> 이력서/자기소개서 -> vmware esx(vsphere)
+
+
+
+ 클라우드/가상화
+
+ aws(아마존 웹 서비스)
+
+
+ 아마존
+
+ 1: 웹서버-<<<<-<<<<<<<<<<<<<<<<<<----------인터넷
+  안정적인 대역폭 
+  서버의 트래픽 처리 능력
+  안정적인 전력공급
+
+ -> DataCenter -> 서버 등의 인프라가 확장되면서 공간, 전력.. 해결안됨
+ 때마침!!!! 가상화(x86서버) 가능!!!!!
+  
+ 초기 가상화는 mainframe 만 가능했음 -> unix 
+
+ 2000년대 초반 AMD 에서 AMD-V 라는 기술을 내놓았고 이후 VMware 가 VT-x 라는 기술을 내 놓았다. 이는 CPU 가상화 기술로 하나의 CPU를 논리적으로 분할하여 각 가상머신들에게 제공할 수 있는 기술이다. 
+
+ 전력 낮출수 있고, 공간 효율성 높인다. 인건비 낮출 수 있다.
+ 서비스 요청시 즉시 배포가 가능하다. 
+ 지역간 이동이 가능하여 서비스의 중단이 없다. 
+
+
+
+ SOHO(Small Office Home Office) -> DataCenter -> DataCenter(클라우드/가상화)  
+
+
+Cloud 의 분류/구분(NIST)
+- 서비스 요청자에게 어떠한 서비스를 제공하느냐에 따라 아래와 같이 구분한다. 
+
+IaaS (Infrastructure as a Service)
+ - 물리적 자원, 인프라 환경을 클라우드에서 대신 제공
+ - 서버, 라우터, 스위치, 방화벽/VPN
+
+PaaS (Platform as a Service)
+ - 개발 환경을 제공 받는다.
+ - 특히 개발의 경우에는 개발 환경, 협업이 매우 중요하다. 이 경우 개발자별로 다른 환경에서 개발이 진행된다면 프로젝트 통합과정에서 매우 많은 오류가 발생할 수 있다. 따라서 미리 개발 환경을 동일하게 구성한 다음 이를 개발자들에게 제공하여 동일 환경에서 개발이 진행될 수 있도록 구성한다.
+ - docker, kubernetes, google app engine  
+
+
+SaaS (Software as a Service)
+ - 소프트웨어를 클라우드 환경에 설치하고 이를 연결하여 사용
+ - 포토샵을 클라우드에 설치하고 이를 집과, 회사에서 연결하여 사용
+ - 파워포인트가 설치되어 있지 않은 컴퓨터에서 gmail, 구글 드라이브 에 있는 파워포인트 파일을 열고 편집할 수 있다. 
+
+
+
+
+ IaaS : 인프라 환경을 클라우드에서 제공하는 것을 의미하며 물리 서버 위에 하이퍼바이저가 배치되며 이 하이퍼바이저(이하 HV)에서 물리자원을 추상화하여 가상 자원을 제공하게 된다. 필수 요건:CPU 가상화지원(AMD-V, VT-x)
+
+ 가상화 
+ - CPU 가상화 : 물리적인 CPU 를 논리적으로 분할하여 가상머신에게 제공하는 기술을 의미하며 가상머신에게 2개의 core 를 제공했다면 가상머신은 스스로 자신이 2개의 물리 CPU 를 가진 것으로 착각한다!
+ -> CPU는 서버가상화, 데스크탑 가상화를 위한 필수 요소로 동작한다. 
+ 
+ - 네트워크 가상화 : VLAN, VRF(Vritual Routing Forwarding)  
+
+ - 서버 가상화 : 물리서버 하나에 하나의 서버 OS 를 설치하여 운영하던 과거의 기술에서 물리서버하나에 HV를 설치하고 이를 이용하여 동시에 여러 서버를 운용할 수 있는 기술
+
+ - 데스크탑 가상화 : 물리 PC 하나에 하나의 OS를 설치하여 운영하던 과거의 기술에서 물리서버 하나에 HV를 설치하고 이를 이용하여 동시에 여러 Desktop 을 운용할 수 있는 기술 -> 고객관리, 오류수정
+
+ - 스토리지 가상화 : 저장공간을 가상화하여 사용한다.
+                     씬 프로비저닝 기능을 이용하여 가상머신들에게
+                     물리자원에서 제공하는 전체 저장공간보다 많은양의
+                     저장공간을 제공할 수 있다. 
+               가상머신이 실제로 사용하는 공간이 물리 저장공간을
+               넘어설 수는 없다. 
+                초기에 다수의 가상머신을 배포해야 하는 경우에 적절히 사용할 수 있는 기술
+
+
+* 서버 가상화 -> HyperVisor
+ 하이퍼바이저가 어디에 배치 되는냐에 따라 아래와 같이 2개의 타입으로 구분된다.
+    
+               type1                          type2
+           bare metal HV                   host based HV
+            VMware ESXi                    VMware Workstation
+            Linux KVM                      Oracle Virtual Box
+            XenServer                      MS Virtual PC
+
+
+ 일반적으로 서버가상화를 이용하여 가상머신을 만들고 가상머신내에서 동작하는 애플리케이션은 서버위에 바로 배치되는 애플리케이션에 비해 성능저하가 30% 정도 된다. 
+
+                           
+KVM  실습환경 만들기
+
+HV 2대 
+ cpu : 4(VT-x)
+ ram : 6GB(6144MB)
+ NIC : 1. NAT , 2. VMnet1
+ DISK : 20GB
+
+Storage 1대
+ cpu : 2
+ RAM : 2GB
+ NIC : 1. NAT , 2. VMnet1
+ DISK : 120GB
+
+1. 3대 설치 진행한다.
+KVM1 -> 211.183.3.101 , DG : 211.183.3.2 , DNS : 8.8.8.8
+        192.168.1.101, X, X
+
+KVM2 -> 211.183.3.102 , DG : 211.183.3.2 , DNS : 8.8.8.8
+        192.168.1.102, X, X
+
+STORAGE -> 211.183.3.254 , DG : 211.183.3.2 , DNS : 8.8.8.8
+           192.168.1.254, X, X
+
+2. 설치가 끝나면 KVM1, KVM2 는 인터페이스를 eth0, eth1 로 변경한다.
+3. 모든 노드는 방화벽과 SELINUX 를 중지시킨다. 재부팅 이후에도 중지되어야 한다.
+
+4. 모든 노드의 /etc/hosts 에는 아래 내용이 포함되어야 한다.
+192.168.1.101    kvm1  
+192.168.1.102    kvm2
+192.168.1.254    storage 
+
+6. 모든 설치과 완료되면 모든 노드에서 
+   yum -y install vim git wget curl && yum -y update 
+
+vi /etc/default/grub  -> 파일수정
+ifcfg-ens32, ens33 -> ifcfg-eth0, eth1 로 변경, 내용수정
+grub2-mkconfig -o /boot/grub2/grub.cfg
+reboot
+
+7. kvm1, kvm2 는 그래픽 환경이 필요하다
+ # yum -y groupinstall "Server with GUI"
+
+8. 재부팅!!!
+
+
+9. kvm1,2 에서 시작을 그래픽 환경으로 시작하기
+ systemctl set-default graphical.target  => init 5 
+ reboot 
+ 하면 GUI 로 부팅된다.
+
+10.kvm1,2에서  # yum -y install qemu-kvm libvirt virt-install virt-manager virt-viewer openssh-askpass
+
+ 하면 준비 끝!!!!
+
+-------------------------------------------------------------------------------------
+
+ qemu-kvm : 가상머신/가상네트워크 등과 KVM 의 연결고리
+ libvirt   : KVM 하이퍼바이저의 데몬(libvirtd)
+ virt-install : cli 기반의 가상 머신 생성 도구
+ virt-manager : GUI 기반의 가상네트워크/머신 관리도구
+ openssh-askpass : 호스트간 연결을 통해  VM  을 이동 시킬 경우 상대 방의 ssh 로 연결하기 위한 도구
+ virsh : 가상머신,가상네트워크, 스토리지 등을 관리하기 위한 shell 
+
+ virt-viewer : 가상머신의 화면을 볼 수 있는 도구. VNC 또는 spice 을 이용하여 가상머신으로 접근할 수 있다. 
+
+ 
+ 가상머신의 구조
+  
+  XML : DISK 영역으로 구분한다. 
+
+  XML 은 디스크,  CPU, 네트워크, RAM, USB 등등의 가상머신을 이루는 요소들을 텍스트로 구성해 놓은 일종의 텍스트 파일. 컴퓨팅자원을 어떻게 배치할 것인가를 결정하는 곳
+
+  DISK : 가상머신의 하드디스크 역할을 하는 곳
+  XML 과 DISK 분리가 가능하다 
+
+
+
+http://iso.linuxquestions.org/download/1964/10226/http/packages.vyos.net/vyos-1.1.8-amd64.iso
+
+
+KVM 을 설치하면 생성된 VM 이 배치될 수 있는 기본 네트워크가 생성되는 데 그것이 default 네트워크이고 이를 연결하기 위한 가상의 스위치가 만들어지는 데 이 스위치의 이름이 "virbr0" 이다. 
+
+virbr0 는 192.168.122.0/24 네트워크로 구성되어 있고 관리용 주소는 192.168.122.1 이 자동할당된다. 또한 해당 가상스위치는 NAT 기능을 가지고 있다. 
+
+ubuntu 에서 root 계정 만들기
+
+$ sudo passwd root
+
+test 의 패스워드 요구 : test
+root 패스워드 : test123
+confirm password : test123
+
+$ su root
+: test123
+# 
+ 
+
+
+KVM 관리 툴
+- virt-manger on linux
+- 각 kvm 호스트에 kimchi  를 설치하고 윈도우,리눅스,MacOS 등 외부 관리 운영체제에서 웹 브라우저를 통해 접속이 가능하다
+
+KVM1, KVM2에 wok 를 이용한 kimchi 설치
+
+ https://192.168.1.101:8001
+ https://192.168.1.102:8001
+
+
+
+
+가상네트워크 만들기 
+
+커스텀 된 이미지로 VM 만들기
+
+방화벽 설치하기 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

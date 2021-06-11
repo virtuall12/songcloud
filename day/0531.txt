@@ -1,0 +1,148 @@
+생성된 서비스 삭제
+- 리전(서울 -ec2, 도쿄-rds)
+- 인스턴스, DB(인스턴스 위에 설치되는 완전관리형)
+    삭제할 때에는 볼륨
+
+- 웹서버 구축을 위한 3tier 구조에 대한 이해
+
+      web서버 - web애플리케이션 서버 - 데이터베이스 서버
+                             계산/처리(프로세스)
+
+aws 기본 서비스 
+- ec2
+- RDS(관계형), dynamoDB(NoSQL)
+- VPC(Virtual Private Cloud)
+- Lambda(computing 서비스) : serverless 서비스
+   -> 함수에 의해 특정 서비스를 호출하는 서비스
+   -> 특정상황이 되거나 특정 입력이 들어오게 되면 사전에 
+         코딩해 둔 함수가 실행되는 서비스이며 서버위에서 실행되지만
+         사용자는 서버에 대한 관리 권한이 없는 완전관리형 서비스
+         실제 서버는 aws 의 아마존 리눅스가 실행되며 함수는 임시 컨테이너가 생성되고 그 안에서 실행된다. 
+   -> 실시간 서비스가 기본이지만, 
+         비실시간 서비스도 존재한다.(cron-1분,20분,1시간... 등등 주기로 몰아서 실행)  , queue (작업을 담는 그릇인 큐에 몇개 이상의 작업이 담기면 자동으로 몰아서 처리) 
+
+    -> auto scaling : 규모가 어느정도 있는 회사에서 필수적으로 사용하는 기능
+Auto Scaling 은 CPU 사용률 등 사전에 정해진 조건에 의해서 EC2 인스턴스를 자동적으로 증감시키는 서비스이다. Web 시스템에서의 급격한 부하 증가에도 유연하게 대응할 수있다.
+
+
+      1. CloudWatch 가 사전에 동작중인 ec2 인스턴스들의 평균 CPU 사용률을 모니터링
+      2. 지정한(예약한) CPU 사용률보다 높은 사용률이 감지되면 이를 사용자에게 알려주고 지정된 작업을 진행하도록 한다. 일반적으로 지정된 작업이 ec2를 늘리는 것이다. 
+      3. ec2 서비스에서 이미지(템플릿)를 이용하여 추가적인 이미지를 생성한다.(최대 ec2 인스턴스를 사전에 지정할 수 있다) 
+
+
+ S3
+다중화된 데이터 스토리지 서비스로써, 업무 시스템에서 파일 서버 같은 것이다. Excel 과 Word 등의 파일을 보관하거나 동영상을 쌓아 두는 것에 적합하다. 객체에 대한 99.9999999999%의 내구성과 최대 99.99%의 가용성을 제공하도록 설계된 신뢰성 높은 온라인 스토리지 이다.
+
+                   nosql(dynamoDB) + s3 -> 잦은 입출력, 동영상등의 자료 등을 처리하기 위하여 두 서비스를 묶어 애플리케이션을 개발하는 경우가 많다.
+
+ CloudFront : 전 세계에 콘텐츠를 전송하기 위한 네트워크 서비스
+ 일반적인 서비스는 특정 리전에 설치 배포가 되기때문에 원거리에서 서비스 요청시에는 지연이 발생하게 되는데.. 클라우드 프론트를 사용하면 해당 컨텐츠가 전세계 리전의 edge location 에 복사 배포된다.
+독립적으로 서비스를 제공하는 것이 아닌 S3 와 같은 서비스를 병행하여 사용해야 한다. 
+-> S3 버킷 내에 폴더(디렉토리)를 만들고 동영상을 담은 다음 해당 폴더를 CF 로 배포하면 된다. 
+지정되지 않은 웹, 이미지 등은 처음 S3를 만들었던 리전에서 처리하게 된다. 
+
+
+
+EBS(Elastic Block Store) - 
+        일반 SSD, 
+       성능 개선된  IOPS SSD, 
+       TAPE - 입출력은 잦지 않으나 장기보관이 필요한 데이터, 비용절감
+
+AMI(이미지) vs IAM(인증서비스) 
+
+인증서비스 IAM -> aws 루트 사용자는 리눅스의 수퍼유저와 기능이 같다. 루트사용자는 내부의 서비스를 모두 사용할 수 있으며 프로젝트 진행시에는 프로젝트 매니저가 사용하는 계정이다. 만약 개발자가 있다면 개발자용 계정을 별도로 만들어야 할 것이다. 이때 개발자용 계정을 생성하고 해당 계정이 사용할 수 있는 서비스들을 지정해 주어야 한다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CloudWatch : 모니터링 시스템
+CloudWatch 는 AWS에서 제공하는 클라우드 자원과 AWS에서 실행되는 애플리케이션을 감시하는 서비스이다. CloudWatch 의 주요 기능은 다음과 같다.
+
+ec2, rds 를 설치하면 자동으로 로그 확인을 위한 cloudwatch 가 실행된다. 
+
+람다에 대한 기본 -> quicksight
+
+
+ec2 -> 물리적인 가상화 : instance 에게 가상화된 resource 를 제공
+                                             (cpu, ram, disk..)
+ecs -> 시스템 레벨 가상화 : 도커
+
+람다 -> 런타임(python, javascript, node.js...)에서 서비스 제공 
+              각 프로그래밍 언어에서 함수를 작성하여 서비스제공
+             람다 입장에서는 물리자원, OS  에 대한 권리가 필요없다. 
+            실제는 amazon linux 에서 function 이 실행되고 요구되는 서비스의 실행은 컨테이너 형식으로 만들어진다.  
+            장점 : 저렴한 비용 ($/실행횟수), 빠른 처리
+            단점 : 실행시간이 최대 15분을 넘길수는 없다. (자동종료됨)
+                       보안/관리(모니터링)적 측면에서 외부 리소스를 사용못함
+                       애플리케이션의 배포는 특정 VPC 에 속하지 않아 이 역시 보안적 측면에서 결함이다. -> 수동으로 지정된 VPC에서 실행되도록 할 수 있다. 
+
+
+function 에서 aws 의 서비스를 호출하여 사용할 수 있다. 대표적으로 s3, sns, sqs, dynamodb , cloudwatch 등을 사용할 수 있음 
+
+MSA(Micro Service Architecture)
+-애플리케이션 개발시 전통적으로는 "폭포수모델" 사용한다. 이는 이전 작업이 끝나면 이를 이어받아 다음 개발자가 추가하는 형식이다. 만약 앞사람이 java 로 개발 했다면 다음 사람도 자바와 연계 가능한 언어를 사용해야한다. 만약 앞사람의 작업이 끝나지 않았다면 다음 사람은 개발을 진행할 수 없는 문제점이 있다. 
+
+MSA 는 전체 프로젝트를 하나하나의 모듈로 나누고 각 개발자가 자신에게 부여된 모듈만을 작성한뒤 최종적으로 이 모듈을 묶기만 하면 된다. 따라서 데이터 전송,수신에 대한 일관성을 유지하기 위해 key: value 형태로 데이터를 주고 받고 동시 작업이 가능하다. 
+
+람다, 도커
+
+트리거 : 방아쇠... 트리거를 설정하고 트리거에 의해 람다가 실행된다.
+
+정책(policy_for_sns) -> 람다에게 해당 정책을 부여한다.(역할)
+
+-------------------------
+const AWS = require('aws-sdk');
+exports.handler = (event, context, callback) => {
+  const params = {
+    Message: event.text,
+    PhoneNumber: event.number
+  };
+
+  const publishTextPromise = new AWS.SNS({ apiVersion: '2010-03-31', region: 'ap-northeast-1'}).publish(params).promise();
+
+  publishTextPromise.then(
+    function(data) {
+      callback(null, "MessageID is " + data.MessageID);
+    }).catch(
+      function(err) {
+        callback(err);
+      });
+};
+
+
+https://aws.amazon.com/ko/getting-started/hands-on/build-serverless-web-app-lambda-apigateway-s3-dynamodb-cognito/
+
+
+빅데이터 시각화 -> FE
+-> 빅데이터 분석을 위한 오픈소스 설치
+
+https://kr.tmaxsoft.com/recruit/recruitNoticeView.do?no=TS-IRC-20210521-0013&seq=1
+
+https://www.jobkorea.co.kr/Recruit/GI_Read/34594215?Oem_Code=C1&logpath=1
+
+https://www.jobkorea.co.kr/Recruit/GI_Read/33552733?Oem_Code=C1&sc=7
+
+https://www.jobkorea.co.kr/Recruit/GI_Read/34812348?Oem_Code=C1&sc=7
+
+https://www.jobkorea.co.kr/Recruit/GI_Read/34639817?Oem_Code=C1&sc=7
+
+
+
+
+
+

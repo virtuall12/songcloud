@@ -1,0 +1,97 @@
+공인IP : $ 을 ISP 에게 지불하고 인터넷 서비스를 제공받는다.
+         공인IP의 주소는 unique 해야한다. 
+
+사설IP : $ 을 지불하지 않으므로 인터넷을 사용할 수 없는 주소
+         10.X.X.X, 172.16.X.X~172.31.X.X, 192.168.X.X 
+         만약 사설 구간에 공인 주소를 임의로 할당할 경우에는 
+         인터넷을 사용할 수 없다.  
+
+ GRE 터널을 이용하면 인터넷 구간을 사설 주소를 이용하여 통신할 수 있다는 점에서 매우 편리하다. 단, 해당 데이터는 clear text 로 전송되므로 중간에 악의적인 목적을 갖는사람이 이를 캡쳐하여 나쁜용도로 사용할 수 있다. 따라서 우리는 해당 데이터가 함호화, 인증, 무결성검사(해싱) 되도록 해야한다. 
+
+이러한 기술을 VPN 이라고 한다.
+
+최근에는 퍼블릭구간에 회사의 데이터베이스를 구축하고 회사내부 또는 별도의  데이터센터에 웹서버를 구축한 다음 이 둘을 VPN을 이용하여 연결하는 경우가 많아지고 있다. 
+
+
+해싱(무결성검사) : 원래의 데이터가 수신지에서 위조나 변조가 되었는지를 확인할 수 있는 기술. 대표적으로 MD5, SHA  알고리즘을 사용하여 이를 검증한다. 
+
+
+VPN 구축 단계
+
+1. IKE Phase1 (Internet Key Exchange)
+ISAKMP (Internet Security Association Key Management Protocol)
+양쪽에서 키를 주고 받아 VPN 통신할 수 있는 길을 만드는 작업
+
+2. IKE Phase 2
+IPsec  (IP Security) 
+만들어진 길 위로 지나가는 실제 데이터에 대한 보안작업이 이루어지는 단계
+-> 데이터 암호화, 인증에 기반한 해싱(HMAC)
+
+
+테스트 할 때 NAT를 제외하고 해 보세요
+[HQ] [BR1]
+int fa0/0
+ no ip nat outside
+
+
+주의해야할 점
+- 순서대로 해야한다.
+- key(test123) .. 는 복사 붙여넣기 하지 말것!
+- # show crypto isakmp sa  를 통해 세션이 만들어져 있는지 여부를 확인
+
+- 실제 업무를 하는 곳에서는 아래와 같은 NAT 가 구성되어 있을 것이다.
+
+ access-list 100 deny ip 192.168.1.0 0.0.0.255 192.168.2.0 0.0.0.255
+ access-list 100 permit ip 192.168.1.0 0.0.0.255 any
+ ip nat inside source 100 int fa0/0 overload
+ !
+
+
+
+
+
+ASA에서 VPN 연결을 위한 사전 구성 사항
+
+ciscoasa# show disk0:
+asdm 이미지가 있는지 확인!!!
+(asdm-721.bin)
+
+asdm image disk0:/asdm-721.bin
+http server enable
+http 0 0 inside
+username user1 password user1 priv 15
+http redirect inside www
+
+track 을 이용한 primary, secondary ISP 운용
+
+sla monitor 1
+ type echo protocol ipIcmpEcho 8.8.8.8 int outside
+ timeout 3000
+ frequency 10
+!
+sla monitor schedule 1 life forever start-time now
+!
+track 1 rtr 1 reachability
+!
+route outside 0 0 10.0.0.1 1 track 1
+route backup 0 0 211.183.3.2 100
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

@@ -1,0 +1,159 @@
+ansible : vm, ec2's instance, container  작업을 일괄적으로 처리할 수 있는 자동화 툴
+
+인프라를 자동화 도구를 이용하여 일괄적으로 생성할 수 있는 도구가 필요하다. - vagrant
+
+ vagrant 는 하이퍼바이저에게 명령을 전달하여 가상머신, 가상 네트워크를 생성하도록 한다. 이때 해당 인프라 환경을 ruby 를 이용하여 작성한다. 이 작성된 파일이 Vagrantfile 이다. 
+
+ vagrant up   -> Vagrantfile 을 읽고 인프라를 만든다
+ vagrant up --provision 또는 vagrant provision 을 실행하면 
+           Vagrantfile 파일 내에서 provision 부분만 실행한다. 
+
+
+[root@ansible test2]# cat Vagrantfile
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+############# Ansible node01 ###############
+Vagrant.configure("2") do |config|
+  config.vm.define "ansible-node01" do |cfg|
+    cfg.vm.box = "centos/7"
+    cfg.vm.host_name = "ansible-node01"
+    cfg.vm.network "private_network", ip: "172.16.1.11"
+    cfg.vm.network "forwarded_port", guest: 22, host: 60011, auto_correct: true, id: "ssh"
+  end
+
+############# Ansible node02 ###############
+  config.vm.define "ansible-node02" do |cfg|
+    cfg.vm.box = "centos/7"
+    cfg.vm.host_name = "ansible-node02"
+    cfg.vm.network "private_network", ip: "172.16.1.12"
+    cfg.vm.network "forwarded_port", guest: 22, host: 60012, auto_correct: true, id: "ssh"
+  end
+
+############# Ansible Server ###############
+  config.vm.define "ansible-server" do |cfg|
+    cfg.vm.box = "centos/7"
+    cfg.vm.host_name = "ansible-server"
+    cfg.vm.network "private_network", ip: "172.16.1.10"
+    cfg.vm.network "forwarded_port", guest: 22, host: 60010, auto_correct: true, id: "ssh"
+    cfg.vm.synced_folder "../data", "vagrant", disabled: true
+    cfg.vm.provision "shell", inline: "yum -y install epel-release"
+    cfg.vm.provision "shell", inline: "yum -y install ansible"
+  end
+end
+[root@ansible test2]#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Vagrant.configure("2")  do  |config|     
+config.vm.define  "ansible-server"  do  |config0|         
+config0.vm.box  =  "generic/centos7"         
+config0.vm.host_name  =  "ansible-server"         
+config0.vm.network  "private_network",  auto_config:  false         config0.vm.provision  "shell",             
+run:  "always",             
+inline:  "ifconfig  eth1  172.16.1.10  netmask  255.255.255.0  up"         config0.vm.provision  "shell",  inline:  "ifconfig  eth1  down"         config0.vm.provision  "shell",  inline:  "ifconfig  eth1  up"
+        config0.vm.network  "forwarded_port",  guest:  22,  host:  60010,  auto_correct:  true,  id:  "                                                                                                                                                                                                                                                  ssh"         config0.vm.synced_folder  "../data",  "vagrant",  disabled:  true         config0.vm.provision  "shell",  inline:  "yum  install  -y  epel-release"         config0.vm.provision  "shell",  inline:  "yum  install  -y  ansible"         config0.vm.provision  "file",  source:  "ansible_env_ready.yml",             destination:  "ansible_env_ready.yml"         config0.vm.provision  "shell",  inline:  "ansible-playbook  ansible_env_ready.yml"     end end
+
+
+KVM 에서 보면 192.168.121.X, 172.16.1.dhcp, 172.16.1.10
+
+ 생성이 마무리 된 이후에 vagrant ssh ansible-server 로 들어가서 
+   ping 172.16.1.11
+   ping 172.16.1.12
+
+
+ 서버 ------ 노드1 노드2
+
+
+global
+        daemon
+        maxconn 256
+
+    defaults
+        mode http
+        timeout connect 5000ms
+        timeout client 50000ms
+        timeout server 50000ms
+
+    frontend http-in
+        bind *:80
+        default_backend servers
+
+    backend servers
+        balance roundrobin 
+        server server1 172.16.1.11:80 
+        server server2 172.16.1.12:80 
+
+
+ ----------- 생성된 가상머신에게 사전에 리소스를 적용하고 싶은 경우 -------------
+Vagrant.configure("2") do |config|
+  config.vm.define "kvm1" do |config0|
+    config0.vm.box = "centos/7"
+    config0.vm.host_name = "kvm1"
+    config0.vm.provider :libvirt do |lv|
+      lv.memory = 4096
+      lv.cpus = 2
+    end
+    config0.vm.provision "shell", inline: "yum -y install qemu-kvm libvirt virt-install openssh-askpass"
+    config0.vm.provision "shell", inline: "sed -i 's/#user = / user = /g' /etc/libvirt/qemu.conf"
+    config0.vm.provision "shell", inline: "sed -i 's/#group = / group = /g' /etc/libvirt/qemu.conf"
+    config0.vm.provision "shell", inline: "systemctl restart libvirtd"
+    config0.vm.network "forwarded_port", guest: 22, host: 60011, auto_correct: true, id: "ssh"
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

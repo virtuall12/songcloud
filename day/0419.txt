@@ -1,0 +1,204 @@
+JOIN : 두 개 이상의 테이블을 연결하는 것
+- INNER JOIN : 두 테이블에 모두 정보가 있어야 한다. 
+예) 고객, 구매 테이블에서 전체 구매 정보를 출력했을 때, 구매 기록이 없는 사용자의 정보는 출력되지 않는다.
+
+일반적으로 "JOIN" 이라고 하면 이는 INNER JOIN 을 의미한다.
+
+ SELECT U.userid, U.name, B.prodname
+    FROM usertbl U
+      INNER JOIN buytbl B
+        ON U.userid = B.userid
+    WHERE B.userid = 'JYP';        <---- 보고싶은 조건 필터링
+  
+
+ 실체는 두 개의 테이블이므로 특정 정보를 확인하기 위해서는 항상 위와 같은 query 를 작성해야한다. 복잡하다. 이를 간편하게 하기 위해서는 
+두개의 테이블에서 자주 사용하는 또는 중요한 정보를 하나의 "가상 테이블" 로 만들고 이 하나의 가상 테이블에서 정보를 출력하는 방법을 고려해야 한다. 이를 위해서는 "가상테이블"을 만드는 기술인 "view"가 필요하다!!!
+
+
+- OUTER JOIN : 한쪽에만 정보가 있어도 출력이 가능하다
+예) 고객, 구매 테이블에서 전체 구매 정보를 출력했을 때, 구매 기록이 없는 사용자의 정보도 출력되며 구매 내역은 "null" 로 출력된다.
+ . 조인 조건에 만족하지 않는 행 까지도 포함 시키는 것
+
+  select U.userid, U.name, B.prodname
+    FROM usertbl U
+      LEFT OUTER JOIN buytbl B
+        ON U.userid = B.userid
+    ORDER BY U.userid
+
+ "없는 정보는 null 로 표기한다"
+
+
+
+- CROSS JOIN : 두 테이블간 모든 행을 "카티션 곱" 한다
+"한쪽테이블의 모든 행과 다른쪽 테이블의 모든 행을 일일이 조인한다"
+
+  select *
+    FROM buytbl
+      CROSS JOIN usertbl;
+
+
+- SELF JOIN : 하나의 테이블을 마치 두개의 테이블 인것처럼 하여 자신의 테이블을 자신의 테이블과 JOIN 하는 것
+
+
+ CREATE DATABASE shopdb;
+ DROP DATBASE IF EXISTS shopdb; -> shopdb 가 있으면 삭제, 없으면 pass
+
+ - DML : INSERT, DELETE, UPDATE, SELECT -> 데이터 자체에 대한 조작
+ - DDL : CREATE, DROP, ALTER -> 데이터 자체가 아닌, 데이터베이스/테이블에 대한 조작
+ - DCL : 사용자에 대한 접근 정의 -> GRANT, REVOKE, DENY
+
+
+
+
+ CREATE TABL `tabledb`.`buytbl`
+
+    `(백쿼터, 백틱) 를 쓴 이유는??? : 띄어쓰기
+     일반적으로 DB, table 생성시 띄어쓰기는 사용하지 않는다
+     test_db : _ (under score)를 사용한다.
+
+
+
+  num INT NOT NULL AUTO_INCREMENT PRIMARY KEY
+
+
+  PRIMARKY KEY : 값이 유일해야한다. NULL 허용하지 않는다(id)
+  UNIQUE       : 값이 유일해야한다. NULL 을 허용한다.(주민등록번호)
+  FOREIGN KEY  : 허용되지 않은 데이터가 입력되는 것을 차단할 수 있다.              
+
+ FK 의 데이터를 따라가면 PK 에서 해당 내용을 확인할 수 있어야 한다.
+
+
+ user 테이블에서 특정 열을 삭제하고자 할 경우 -> 테이블 자체삭제 : DROP
+ 
+ ALTER TABLE user
+   DROP column addr;
+
+ ALTER TABLE user
+   CHANGE column addr address CHAR(5) NULL ;
+    
+
+ ALTER TABLE user 
+   DROP PRIMARY KEY;
+
+ ALTER TABLE user
+   ADD PRIMARY KEY (userid);
+ 
+ ALTER TABLE user
+   ADD phone CHAR(13) ; 
+
+
+
+
+
+
+
+
+
+ 
+ 데이터 자체에 대한 조작 (DML-> insert, update, delete, select..)
+
+  update testtbl
+    set name = '홍길동'
+      WHERE id = 'hdg'
+
+  delete from testtbl
+    where name = 'hdg'
+
+
+
+
+ view 기본 
+ - select 를 이용한 가상의 테이블
+ - 두 개 이상의 테이블에서 정보를 모아 한의 가상 테이블로 만들 수 있다.
+ - use testdb;
+    CREATE VIEW testview
+     AS  
+      select userid, name, addr FROM usertbl;
+
+
+----------- 실습 ------------------------------------
+- 두 개의 테이블은 hosttable, vmtable 
+- 기준 테이블 : hosttable
+  PK : hostname
+
+- 보조 테이블(FK 테이블) : vmtable
+  PK : vmname
+  FK : hostname (REFERENCES hosttable(hostname)) <-- UPDATE CASCADE
+
+- view 만들기(v_kvmtable)
+  
+ hostname   호스트의IP   호스트CPU사용률    VM이름    vCPU    Memory
+ 
+ select * from v_kvmtable 단, 출력결과는 호스트명의 올림차순으로!!!
+ 
+- 단, CPU 는 1~4 사이에서만 선택이 가능하다. Memory 1024 ~ 4096 사이에서만 선택이 가능해야 한다.
+- 만약 CPU 와 RAM 을 선택하지 않으면 vCPU 는 1개, Memory size 는 1024(MB)가 되어야 한다.
+- 
+
+  결과는 스냅샹으로 올려주세요 : "홍길동.jpg"
+---------------------------------------------------------------
+
+ "Index" : "찾아보기","색인" 
+            색인을 사용하게 되면 검색 속도를 올릴 수 있다.
+            무작정 색인을 사용한다고 해서 무조건 속도가 빨라지는 것은 아니다
+
+
+ 트리거 작성하기
+
+ DELIMITER //  -- ; 가 종료가 아니다! //가 종료다!!!
+ CREATE TRIGGER trg_test
+    AFTER DELETE   -- 언제 작동할 것인가?
+    ON usertbl     -- 어느 테이블에서 작동할 것인가?
+    FOR EACH ROW   -- 어느 행을 모니터링 할 것인가?
+ BEGIN
+    INSERT INTO backup_tbl VALUES (OLD.userid, OLD.name, OLD.addr, OLD.mobile1...'삭제', CURDATE(), logname );
+
+ END //
+ DELIMITER ; 
+ 
+
+
+ 기본적인 DDL, DML 명령어 어떤것이있는가?
+ SELECT 에서 where, group, having 사용하기, 정렬하기
+ view, 간단한 트리거... 
+ 
+
+
+
+
+
+
+
+ 쉘 스크립트 vs 컴파일
+ 스크립트 -> 순서대로 차례차례 실행
+             bash, python, perl, php, javascript(node.js) 
+
+ 컴파일 -> 전체 내용을 미리 훍어본다. 
+
+
+
+
+
+
+ 변수는 라면박스
+
+ 변수 : 전역변수 : 시스템 전체에 영향을 미치는 변수
+                   시스템 환경변수가 대표적인 전역변수
+
+        지역변수 : 해당 파일에서만 사용할 수 있는 변수
+                   지역변수를 전역 변수로 변경하고 싶다면
+                   앞에다 export  를 붙인다.
+
+          
+
+
+
+
+
+
+
+
+
+
+
+

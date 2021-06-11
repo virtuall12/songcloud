@@ -1,0 +1,318 @@
+JOIN : 두 개 이상의 테이블을 묶어 한의 결과 집합으로 만들어 내는 것을 말한다.
+
+
+             (usertbl)      |   (buytbl)
+ 송장 : 이름, 주소, 전화번호, 제품명, 수량
+
+ INNER : 대표적인 join
+         왼쪽에 기준이 테이블을 배치하고 오른쪽에 서브 테이블 배치
+         서브테이블에서 기준 테이블로 정보를 매칭시킨다(예, id<=>id)
+         결국 최종 결과는 서브 테이블의 행 만큼 결과가 나온다.
+         양 테이블에 모두 존재하는 정보에 대해서만 출력이 가능하다
+           a , 선풍기, 1
+           a , 티셔츠, 1
+           b , 청바지, 2
+
+ OUTER : INNER JOIN 은 양 테이블에 모두 존재하는 정보만을 출력한다면
+         OUTER JOIN 은 한쪽에 정보가 없더라도 모두 출력한다.
+           a , 선풍기, 1
+           a , 티셔츠, 1
+           b , 청바지, 2
+           c , null <-- 구매 기록 없음
+
+         OUTER 조인은 LEFT OUTER, RIGHT OUTER 가 있다. 
+         일반적으로 LEFT OUTER 를 사용한다. 왜?? 모델링에서 기준 테이블은 왼쪽에 둔다!!!
+
+ CROSS
+ SELF
+
+
+
+CROSS JOIN 의 예
+  고객테이블       제품테이블
+     a              선풍기
+     b              냉장고
+                    전자레인지
+
+
+    a - 선풍기  (0)
+    a - 냉장고  (0)
+    a - 전자..  (1) 
+    b - 선풍기  (1)
+    b - 냉장고  (0) 
+    b - 전자..  (1)   
+
+
+SELF 조인 - 자기 자신과 자기 자신이 조인한다. 결국 테이블 1개로 조인시킨다. 
+
+
+   직원      직속상관    구내번호
+  이부장  ->  김재무      2222-2
+  우대리  ->  이부장      2222-2-1
+  지사원  ->  이부장      2222-2-2
+
+
+함수... 반복된 작업을 수행할 때 귀찮으니 일종의 모듈을 생성해 두고 필요할 때 불러서 이를 사용하는 것.
+
+
+스토어드 프로시져 (일종의 함수)
+
+DELIMITER $$  <---- $$ 가 다음에 나와야 종료된다.
+CREATE PRO.. 이름
+BEGIN
+              연산1 ;
+              연산2 ;
+              연산3 ;
+END $$
+
+DELIMITER ;  <--- 원래의 종료 문자 ; 로 복귀
+
+
+ call 이름  <--- 기능 호출
+ ...
+ ...
+ ...
+ call 이름
+
+
+
+
+
+
+
+
+프로그래밍의 순서
+1. 데이터형(int, char... bool..)
+2. 기본문법(if,for, while...) 
+3. 함수 ( 반복해서 사용할 기능을 미리 지정해 두고 
+   필요할 때 불러서 사용하는 것) -> 코드가 짧아지고 간결해진다.
+                                    기능 구현이 빨라진다.
+4. 라이브러리
+5. 객체지향... class, instance 
+   기본 기능은 동일하지만 일부 옵션등을 바꾸고 싶을 때 기본 기능을 복사하여 옵션변경 후 사용하는 것.
+
+변수에 입력된 숫자가 짝수이면 "짝수",홀수이면 "홀수"를 출력하라
+
+DROP PROCEDURE IF EXISTS test() -- test()가 있으면 삭제 , 없으면 무시됨
+DELIMITER //
+CREATE procedure test()
+BEGIN
+	DECLARE var INT; 
+    SET var = 100;
+    
+    IF (var%2) = 0 
+    THEN
+		SELECT '짝수입니다';
+    ELSE 
+		SELECT '홀수입니다';
+	END IF;
+END //
+DELIMITER ;
+
+CALL test();
+
+
+
+-----------------------------------------------------------------------
+ 직원번호 10001  번의 입사일을 확인하여 5년이 넘었다면 "축하멘트" 를 날려라!!
+
+ 1. 직원번호 10001 번의 입사일을 가져와라
+         select 입사일 from emptable WHERE number=10001
+     
+    -> 2002-01-01
+
+ 2. 현재의 날짜도 데이터형이 DATE 여야한다.
+        CURDATE() -> 2021-04-16
+ 3.   2021-04-16 - 2002-01-01  를 구현할 수 있는 함수가 있다.
+
+       DATEDIFF(현재날짜, 입사일) -- 출력값은 일수로 나온다 
+
+ 4. 일수가 1000 일이라면 5년이 넘었는지를 어떻게???
+ 
+     1000/365 로 나눈다 -> 5  또는 1 .. 2,...
+
+    결과가 >= 5  라면 "축하메시지"
+
+   
+
+ 퀴즈!!!!
+ 
+ 현재 우리가 사용하는 usertable 을 확인하고, 김범수의 건강검진 가능 여부를 확인하라.
+ 만약 김범수가 홀수년도에 태어났다면 올해가 건강검진 대상자 이다.
+
+ 결과는 아래와 같아야 한다.
+
+ 예를 들어 김범수가 1979년 생이면 "건강검진 대상자 입니다"
+ 아니라면 "내년에 건강검진을 받으세요"!!
+
+
+
+use sqldb;  -- sqldb 선택
+DROP PROCEDURE IF EXISTS test15()
+DELIMITER //
+CREATE procedure test15()
+BEGIN
+	DECLARE uname VARCHAR(10) ; -- usertbl 에 있는 name 을 받기 위한 변수
+    	DECLARE birth INT ;         -- usertbl 에 있는 birthyear 를 받기위한 변수 
+
+	SELECT name INTO uname      -- usertable 에서 kbs(김범수)의 name 을 받아서 uname
+		FROM usertbl WHERE userid = 'kbs';
+    	SELECT birthyear INTO birth -- kbs(김범수)의 생년(birthyear)를 받아서 birth 에 넣었
+		FROM usertbl WHERE userid = 'kbs';
+    
+    IF (birth%2) = 0
+    THEN
+		SELECT CONCAT(birth,'년 생인',uname,'님은 건강검진 대상자입니다');
+    ELSE 
+		SELECT CONCAT(birth,'년 생인',uname,'님은 내년에 건강검진 받으세요');
+    END IF;
+END //
+DELIMITER ;
+
+CALL test15();
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+ WHILE  ~ 하는 동안에 (조건식이 참이라면 계속해서 실행하겠다,거짓이되면 종료하겠다)
+
+ 형식 : 
+ WHILE <부울식> DO
+
+      실행할 것들...
+
+ END WHILE ; 
+
+
+
+
+
+
+
+
+1~100 사이의 숫자 중 홀수만 더하세요~
+
+
+
+
+제약 조건 : 
+
+number = 0
+while number != 4:
+ print(prompt)
+ number =int(input())
+1. ADD
+2. DEL
+3. LIST
+4. QUIT
+
+Enter Number : 4
+
+coffee = 10
+money = 300
+while money:   --->    while 1  ---> while True : 항상 참이다
+  print("돈을 받았으니 커피를 줍니다")
+  coffee = coffee -1
+  print ("남은 커피의 양은 %d개" %d)
+
+ 제약 조건 : 데이터의 무결성을 지키기 위한 제한된 조건
+             내가 입력한 데이터를 다른 데이터와 섞여 확인할 수 없다면
+              이는 무결성이 훼손된 것이다.
+
+ - PK (Primary key) -> 회원가입시 ID
+ - FK
+ - UNIQUE (주민등록번호, 겹쳐서는 안된다-유일성을 보장!, 단, NULL허용)
+ - CHECK
+ - DEFAULT
+ - NULL 값 허용
+
+FK를 따라서 PK에 가보면 FK쪽 정보를 확인할 수 있어야 한다.
+
+ FOREIGN KEY(userid) REFRENCES usertbl(userid)
+
+-------------------- FK 관련 실습 ----------------------
+USE sqldb;
+ALTER TABLE buytbl
+	ADD FOREIGN KEY (userid) REFERENCES usertbl (userid);
+
+INSERT INTO buytbl VALUES(NULL, 'KBS', '운동화', 'NULL', 30, 2);  
+
+
+
+
+step1.
+aws 에서 "hosttable", "vmtable" 
+
+hosttable -> hostname : PK
+vmtable -> hostname : FK references hosttable(hostname)
+vmtable -> vmname : PK
+
+step2. 
+자신의 KVM 호스트명을 KVM1 으로 하고 , 인스턴스(vm)을 하나 생성한다. 
+virt-builder -l : cirros (테스트용 가상머신, 별도의 패스워드 설정 필요없음. 이미 있음, username:cirros, password: cubswin:)
+
+  virt-builder -o a.img cirros-0.3.5 --size 5G
+  virt-install --name vm1 --vcpus 1 --memory 512 --disk path=/root/a.img --network network:default --graphics none --import 
+
+
+step3.
+ 자신의 호스트명을 KVM1 에서 KVM2로 변경한 뒤 아래의 내용을 다시 해본다 vm1 이름 동일한 상태에서는 생성이 불가하므로 반드시 vm 이름을 변경한 뒤 전송되어야 한다.
+
+ 최종결과 :    두 테이블을 INNER JOIN 하여 
+  host명 호스트IP주소  호스트CPU사용률 가상머신명 VCPUS  RAMSIZE
+
+=========================================
+#!/bin/bash
+
+usage=$(mpstat | tail -1 | gawk '{print 100-$13}') #현재 CPU 사용률 구하기
+echo "100 * $usage" | bc > cpuusage.txt #예) 100곱하여 82.00 으로 표기
+cpu1=$(gawk -F. '{print $1}' /root/cpuusage.txt) #예) 82.00 에서 82 만 별도로 뽑아오기
+time=$(date +%y%m%d%H%M)
+if [ $cpu1 -le 500 ]
+then
+echo "$time : CPU 사용률이 5%미만입니다. 안정적입니다"
+elif [ $cpu1 -le 1000 ]
+then
+echo "$time : CPU 사용률이 10%미만입니다. 안정적입니다"
+elif [ $cpu1 -ge 8000 ]
+then
+echo "$time : CPU 사용률이 80% 이상입니다. 조치가 필요합니다"
+else
+echo "$time : CPU 사용률이 10% ~ 80% 입니다"
+fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

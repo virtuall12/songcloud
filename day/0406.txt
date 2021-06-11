@@ -1,0 +1,14 @@
+주소표기 방법
+
+1. 절대 경로 : 현재 위치와 상관없이 어느곳에서도 동일 위치로 이동할 수 있다. 예를 들어... 
+
+  $ cd /var/www/html
+  $ cd /etc/sysconfig/network-scripts
+
+
+2. 상대 경로 : 현재 위치에 따라 경로가 달라진다.
+  $ cd /etc
+  $ cp ../a.txt .
+
+  $ cd /var/www
+  $ cp ../a.txt .

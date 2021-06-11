@@ -1,0 +1,366 @@
+(오전) PHP ----------------------------------------
+
+DB Check sample file
+root@manager01:/var/www/html# cat check.php
+<!DOCTYPE html>
+<html>
+<head>
+<title>DB CHECK</title>
+<style>
+@font-face {
+font-family: "NanumBarunGothic";
+src: url("[https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing](https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing)");
+}
+body { font-family: "NanumBarunGothic", serif }
+
+            a:link { text-decoration: none; color: black; }
+            a:visited { text-decoration: none; color: gray; }
+            a:hover { text-decoration: underline; color: black; }
+            a:active { text-decoration: none; color: black; }
+
+    </style>
+
+</head>
+<body>
+<?php
+$db_host = "localhost";
+$db_user = "user01";
+$db_password = "user01";
+$db_name = "testdb";
+$con = mysqli_connect($db_host, $db_user, $db_password, $db_name);
+
+    if (mysqli_connect_error($con))
+    {
+            echo "MySQL connection : FAILED <br>";
+            echo "ERROR : ", mysqli_connect_error();
+    }
+    else
+    {
+            echo "<h2>DB CONNECTION : OK</h2>";
+            echo "<a href='<http://www.naver.com>'>네이버</a><br>" ;
+            echo "<br>" ;
+            echo "<h3>DB연결에 성공하였습니다</h3>" ;
+    }
+    mysqli_close($con);
+
+?>
+</body>
+</html>
+root@manager01:/var/www/html#
+
+기본 index.php 파일 내용
+
+간단한 페이지 형태
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PHP 프로그래밍 입문</title>
+<link rel="stylesheet" type="text/css" href="./css/common.css">
+<link rel="stylesheet" type="text/css" href="./css/main.css">
+</head>
+<body>
+<header>
+<?php include "header.php";?>
+</header>
+<section>
+<?php include "main.php";?>
+</section>
+<footer>
+<?php include "footer.php";?>
+</footer>
+</body>
+</html>
+
+- ----------- 테이블 만들기 ------------------
+<?php
+$con = mysqli_connect("localhost", "root", "test123", "testdb") or die("접속 실패");
+$sql = "
+CREATE TABLE IF NOT EXISTS usertbl
+(   userid CHAR(8) NOT NULL PRIMARY KEY,
+username VARCHAR(10) NOT NULL,
+birthdate DATE NOT NULL,
+addr VARCHAR(10) NOT NULL,
+mobile1 CHAR(3),
+mobile2 CHAR(8),
+distance SMALLINT,
+mdate DATE
+)
+";
+
+$ret = mysqli_query($con, $sql); // $con 은 접속 연결자, $sql 은 sql 문
+
+if($ret) {
+   echo "usertbl이 정상적으로 생성되었습니다";
+}
+else {
+   echo "테이블 생성 실패<br>";
+   echo "실패원인 :".mysqli_error($con);
+}
+
+mysqli_close($con);
+
+?>
+
+- ------- base.php 내용 ------------
+<!DOCTYPE html>
+<html>
+<head>
+<title>DB CHECK</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<style>
+@font-face {
+font-family: "NanumBarunGothic";
+src: url("[https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing](https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing)");
+}
+body { font-family: "NanumBarunGothic", serif }
+
+            a:link { text-decoration: none; color: black; }
+            a:visited { text-decoration: none; color: gray; }
+            a:hover { text-decoration: underline; color: black; }
+            a:active { text-decoration: none; color: black; }
+
+    </style>
+
+</head>
+<body>
+<?php
+
+?>
+</body>
+</html>
+
+- ---------------main.html -------------------------
+root@manager01:/var/www/html# cat main.html
+<!DOCTYPE html>
+<html>
+<head>
+<title>회원관리 시스템</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<style>
+@font-face {
+font-family: "NanumBarunGothic";
+src: url("[https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing](https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing)");
+}
+body { font-family: "NanumBarunGothic", serif }
+
+            a:link { text-decoration: none; color: black; }
+            a:visited { text-decoration: none; color: gray; }
+            a:hover { text-decoration: underline; color: black; }
+            a:active { text-decoration: none; color: black; }
+
+    </style>
+
+</head>
+<body>
+
+   <h2> KEDUIT 마라톤 회원관리 시스템 </h2>
+    <a href='select.php'>(1) 회원조회(조회 후 수정/삭제 가능)</a> <br><br>
+    <a href='insert.php'>(2) 신규 회원 등록 </a> <br> <br>
+
+    <form method="get" action="update.php">
+            (3) 회원 수정 - 회원 아이디 : <input type="text" name="userid"> <input type="submit" value="수정">
+    </form>
+    <form method="get" action="delete.php">
+            (4) 회원 삭제 - 회원 아이디 : <input type="text" name="userid"> <input type="submit" value="삭제">
+    </form>
+
+</body>
+</html>
+root@manager01:/var/www/html#
+
+- ----------- insert.php ----------------------
+root@manager01:/var/www/html# cat insert.php
+<!DOCTYPE html>
+<html>
+<head>
+<title>신규신청</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<style>
+@font-face {
+font-family: "NanumBarunGothic";
+src: url("[https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing](https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing)");
+}
+body { font-family: "NanumBarunGothic", serif }
+
+            a:link { text-decoration: none; color: black; }
+            a:visited { text-decoration: none; color: gray; }
+            a:hover { text-decoration: underline; color: black; }
+            a:active { text-decoration: none; color: black; }
+
+    </style>
+
+</head>
+<body>
+
+    <h2>마라톤 신청 페이지(신규가입) </h2>
+    <form method="post" action="insert_result.php">
+            아이디 : <input type="text" name="userid"><br><br>
+            이름 : <input type="text" name="username"><br><br>
+            출생연도 : <input type="date" name="birthdate"><br><br>
+            지역 : <input type="text" name="addr"><br><br>
+            휴대폰국번 : <input type="text" name="mobile1"><br><br>
+            휴대폰번호 : <input type="text" name="mobile2"><br><br>
+            신청거리 : <select name="distance">
+                            <option value="42">풀 코스(42.195 Km)</option>
+                            <option value="21">하프코스(21.0975 Km)</option>
+                            <option value="10">10 Km</option>
+                            <option value="5">5 Km</option>
+
+            </select><br><br>
+    <input type="submit" value="신청">
+
+    </form>
+
+</body>
+</html>
+root@manager01:/var/www/html#
+
+- ------ sql 문 ---------------------------------------------------------
+$sql =" INSERT INTO userTbl VALUES('".$userid."','".$username."',".$birthdate;
+$sql = $sql.",'".$addr."','".$mobile1."','".$mobile2."',".$distance.",'".$mdate."')";
+- --------- insert_result.php ---------------------------------------
+<!DOCTYPE html>
+<html>
+<head>
+<title>DB CHECK</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<style>
+@font-face {
+font-family: "NanumBarunGothic";
+src: url("[https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing](https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing)");
+}
+body { font-family: "NanumBarunGothic", serif }
+
+            a:link { text-decoration: none; color: black; }
+            a:visited { text-decoration: none; color: gray; }
+            a:hover { text-decoration: underline; color: black; }
+            a:active { text-decoration: none; color: black; }
+
+    </style>
+
+</head>
+<body>
+<?php
+$con=mysqli_connect("localhost","root","test123","testdb") or die("DB 연결 실패");
+
+    $userid = $_POST["userid"];
+    $username = $_POST["username"];
+    $birthdate = $_POST["birthdate"];
+    $addr = $_POST["addr"];
+    $mobile1 = $_POST["mobile1"];
+    $mobile2 = $_POST["mobile2"];
+    $distance = $_POST["distance"];
+    $mdate = date("Y-m-j");
+    $sql ="INSERT INTO usertbl VALUES('$userid','$username','$birthdate','$addr','$mobile1','$mobile2','$distance','$mdate')";
+
+    $ret = mysqli_query($con,$sql);
+
+    echo "<h2> 마라톤 가입 신청 결과 </h2>";
+    if($ret) {
+            echo "가입 신청이 정상적으로 처리되었습니다";
+    }
+    else
+    {
+            echo "신청이 잘못 되었습니다 <br>";
+    }
+    mysqli_close($con);
+
+    echo "<br> <a href='main.html'> <-- 초기화면 </a>";
+
+?>
+</body>
+</html>
+
+- -------------- select.php --------------------------
+<!DOCTYPE html>
+<html>
+<head>
+<title>DB CHECK</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<style>
+@font-face {
+font-family: "NanumBarunGothic";
+src: url("[https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing](https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing)");
+}
+body { font-family: "NanumBarunGothic", serif }
+
+            a:link { text-decoration: none; color: black; }
+            a:visited { text-decoration: none; color: gray; }
+            a:hover { text-decoration: underline; color: black; }
+            a:active { text-decoration: none; color: black; }
+            table { border-collapse: collapse; }
+
+    </style>
+
+</head>
+<body>
+<?php
+$con=mysqli_connect("localhost","root","test123","testdb") or die("데이터베이스 연결 실패");
+$sql = "select * from usertbl";
+$ret = mysqli_query($con,$sql);
+
+    if($ret) {
+            $count = mysqli_num_rows($ret);
+    }
+    else {
+            echo "데이터 검색 실패<br>";
+            exit();
+    }
+
+    echo "<h2>회원 검색 결과</h2>";
+    echo "$count 건이 검색되었습니다<br><br>";
+    echo "<table border=1>";
+    echo "<tr>";
+    echo "<th>ID</th><th>NAME</th><th>BIRTH-DATE</th><th>ADDR</th><th>NUM1</th><th>NUM2</th><th>DISTANCE</th><th>JOIN-DATE</th><th>MOD</th><th>DEL</th>";
+
+    echo "</tr>";
+    while($row = mysqli_fetch_array($ret)) {
+            echo "<tr>";
+            echo "<td>".$row['userid']."</td>";
+            echo "<td>".$row['username']."</td>";
+            echo "<td>".$row['birthdate']."</td>";
+            echo "<td>".$row['addr']."</td>";
+            echo "<td>".$row['mobile1']."</td>";
+            echo "<td>".$row['mobile2']."</td>";
+            echo "<td>".$row['distance']."</td>";
+            echo "<td>".$row['mdate']."</td>";
+            echo "<td>"."<a href='update.php?userid=",$row['userid'],"'>수정</a></td>";
+            echo "<td>"."<a href='delete.php?userid=",$row['userid'],"'>삭제</a></td>";
+
+            echo "</tr>";
+    }
+
+    echo "</table>";
+    echo "<br> <a href='main.html'> <-- 초기화면</a>";
+
+    mysqli_close($con);
+
+?>
+</body>
+</html>
+
+(오후) 도커 ----------------------------
+manager (Ansible-Server)에서 아래 내용 실행
+
+apt-add-repository ppa:ansible/ansible
+
+apt-get update
+
+apt-get install -y ansible
+
+Worker 는 Ansible-node 라고 부른다.
+
+[centos의 경우]
+yum -y update
+yum -y install epel-release
+yum -y install ansible
+
+/etc/ansible/hosts 파일 가장아래에
+211.183.3.101
+211.183.3.102
+211.183.3.103
+을 등록한다
+
+#ansible all -m ping
+

@@ -1,0 +1,325 @@
+[실습준비]
+storage 노드에서 /vm/util 로 이동하여 
+
+wget http://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-2009.qcow2
+
+[결과]
+
+2021-04-05 08:57:24 (1.22 MB/s) - ‘CentOS-7-x86_64-GenericCloud-2009.qcow2’ saved [888995840/888995840]
+
+
+
+aws -> Instance vs VM ??? 
+
+instance 는 일종의 기본 템플릿을 만들고 이 템플릿을 이용하여 가상머신을 생성하는 형태. 설치가 이미 되어 있는 가상머신을 이미지화 하고 이를 배포하는 형식으로 가상머신을 생성할 수 있다.  
+
+일반적인 클라우드 플랫폼(aws,gcp,azure,openstack) 에서 가상머신을 배포하는 방식으로 instacne 를 사용한다. 
+
+
+
+[실습]
+클라우드 이미지를 이용하여 루트패스워드 설정한 뒤, 이를 이용한 인스턴스 생성
+
+[root@kvm1 ~]# yum -y install libguestfs-tools
+
+[root@storage util]# chmod 777 /vm -R    <--- 클라우드 이미지 파일에 대한 수정이 가능하도록 퍼미션 조정
+
+[root@kvm1 ~]# virt-customize -a /vm/util/CentOS-2009-1.qcow2 --root-password password:test123
+[   0.0] Examining the guest ...
+[  10.2] Setting a random seed
+[  10.3] Setting passwords
+[  13.0] Finishing off
+[root@kvm1 ~]#
+
+
+[root@kvm1 ~]# virt-install --name centos01 --vcpus 1 --ram 1024 --graphics vnc --disk path=/vm/util/CentOS-2009-1.qcow2 --import
+
+
+
+설치과정 안내
+1. 기본 클라우드 이미지 를 복사하여 별도로 준비한다.
+  copy CentOS-....qcow2 CentOS-2009-1.qcow2  
+  "CentOS-2009-1.qcow2 가 새로운 인스턴스의 디스크 역할을 하게 됨"
+
+2. 복사된 이미지의 root 패스워드를 설정한다
+3. 설정된 최종 이미지(CentOS-2009-1.qcow2) 를 이용하여 "배포" 한다
+virt-install --name centos01 --vcpus 1 --ram 1024 --graphics vnc --disk path=/vm/util/CentOS-2009-1.qcow2 --import
+
+
+
+
+Quiz. KVM2 에서 CentOS-2009-2.qcow2 이미지에 root 패스워드를 test111 로 수정하고 이를 배포하라!!!
+단, cpu=1, ram=1G
+
+
+CentOS-2009-1.qcow2 -> 211.183...
+CentOS-2009-2.qcow2 -> 192.168.122... 
+
+되도록이면 네트워크는 직접 지정하여 사용하세요!!!
+
+
+[결과]
+기존 qcow2 이미지를 이용하여 새로운 인스턴스가 생성되었다. 하지만, 디스크의 용량은????
+
+qcow2 이미지 자체가 디스크로 활용되므로 전체 디스크 사이즈는 900MB 밖에 사용할 수 없다. VM 배포가 인스턴스를 활용하므로 설치과정이 생략되어 편리하지만 디스크 용량이 매우 작아 이를 실제로 활용하는 것은 어려운 일이다. 
+
+이를 해결하기 위하여 두가지 방법을 사용할 수 있다.
+
+첫번째 방법. 900MB + 추가 디스크 
+
+[root@kvm1 ~]# qemu-img create -f qcow2 -o size=5G /vm/util/add5g.qcow2
+[root@kvm1 ~]# virt-install --name centos001 --vcpus 1 --ram 1024 \
+> --network network:default --disk path=/vm/util/CentOS-2009-1.qcow2 \
+> --disk path=/vm/util/add5g.qcow2 --import
+
+
+
+Quiz. 사용자로 부터 아래의 내용이 출력되는 script(bash) 를 작성하라
+
+가상머신의 이름은? : centos002
+CPU 개수? : 1
+RAM 사이즈? : 1024
+루트패스워드? : test123
+추가디스크 사이즈? : 5
+
+잠시 뒤, 설치된 인스턴스가 화면에 떠야 한다!!!!
+
+
+참고로 네트워크는 default 로 연결되도록 하세요!!!
+
+
+***** 두번째 방법. ******
+- virt-builder 를 이용하는 방법
+- 첫번째 방법은 sda 디스크가 800MB ~ 1GB  정도로 매우 적다. 하지만 실제 클라우드상에서 인스턴스를 동작할 때 위와 같이 sda 를 1GB 정도로 구성하는 경우는 없다!
+
+우리는 디스크의 사이즈 자체를 수정할 수 있어야 한다. 만약 사용자가 CPU1, RAM1GB, 디스크 10GB 를 신청했다면 초기 디스크 사이즈를 10GB 로 고정해 주어야 한다. 그렇다면 첫번째 방법은 사용할 수 없다. 
+
+virt-builder 는 인터넷상에서 디스크 사이즈 수정이 가능한 이미지를 다운로드하여 디스크사이즈도 수정하고 패스워드도 수정할 수 있는 방법이다.
+
+
+step1.
+[root@kvm2 ~]# yum -y install libguestfs-xfs   <--- 추가 툴 설치
+[root@kvm2 ~]# export LIBGUESTFS_BACKED=direct
+
+step2.
+[root@kvm2 ~]# virt-builder -l  <-- 다운 가능한 클라우드 이미지 리스트 확인
+[root@kvm2 ~]# virt-builder centos-7.8 --format qcow2 --size 20G -o /vm/util/centos78.qocw2 --root-password password:test123
+
+<-- 클라우드 이미지 CentOS 7.8 을 다운로드 하여 디스크 사이즈를 20GB 로 확장하고 루트 패스워드를 test123 으로 변경한다.
+
+
+step3. 생성된 이미지를 이용하여 인스턴스 생성하기
+[root@kvm2 ~]# virt-install --name centos78 --vcpus 1 --ram 1024 \
+--network bridge=br0 --graphics none --serial pty --console pty --disk path=/vm/util/centos78.qcow2 --import
+
+생성되면서 바로 console 연결된다. 
+
+
+
+
+-----------------------------------
+vm 만들기 -> virt-install 
+virsh list --all 
+virsh net-list --all
+
+virsh console vm이름
+virsh edit vm이름
+virsh dumpxml vm이름
+
+네트워크 만들기
+1. 파일명.xml 파일 만들기
+2. virsh net-define 파일명.xml 
+
+
+중지 및 삭제
+virsh destroy vm이름   <--- 가상머신 종료
+virsh net-destroy 네트워크이름 <--- 네트워크 종료
+virsh undefine vm이름  <--- 가상머신 삭제
+virsh net-undefine 네트워크이름 <--- 네트워크 삭제
+
+
+실습 : 네트워크 만들기
+[root@kvm1 ~]# virsh net-define testnat.xml
+Network nat1 defined from testnat.xml
+
+[root@kvm1 ~]# virsh net-list --all
+ Name                 State      Autostart     Persistent
+----------------------------------------------------------
+ default              active     yes           yes
+ nat1                 inactive   no            yes
+
+[root@kvm1 ~]# virsh net-start nat1
+Network nat1 started
+
+[root@kvm1 ~]# virsh net-autostart nat1
+Network nat1 marked as autostarted
+
+[root@kvm1 ~]# virsh net-list --all
+ Name                 State      Autostart     Persistent
+----------------------------------------------------------
+ default              active     yes           yes
+ nat1                 active     yes           yes
+
+[root@kvm1 ~]# virsh net-dumpxml nat1
+<network>
+  <name>nat1</name>
+  <uuid>99614f54-068e-4d45-9a52-43a9e21dd76e</uuid>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='virbr10' stp='on' delay='0'/>
+  <mac address='52:54:00:77:5f:74'/>
+  <ip address='192.168.222.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.222.2' end='192.168.222.254'/>
+    </dhcp>
+  </ip>
+</network>
+
+[root@kvm1 ~]# ip a | grep virbr10
+10: virbr10: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default qlen 1000
+    inet 192.168.222.1/24 brd 192.168.222.255 scope global virbr10
+11: virbr10-nic: <BROADCAST,MULTICAST> mtu 1500 qdisc pfifo_fast master virbr10 state DOWN group default qlen 1000
+[root@kvm1 ~]#
+
+
+
+*Live Migration
+동작중인 VM 을 하나의 호스트에서 다른 호스트로 이동 시킬 수 있는 기술로 서비스 중인 애플리케이션의 중지 없이 지역간 이동이 가능한 기술이다. 클라우드를 위해서는 필수적인 요소라 할 수 있다.
+
+기본적으로 1Gbps  를 지원해야 한다!!!! 실제 운영되는 데이터센터에서는 보통 40Gbps 또는 100Gbps 등을 사용하여 트래픽의 지연이 없도록 구성한다.
+
+
+* 스냅샷
+[root@kvm2 ~]# virsh snapshot-list centos78
+ Name                 Creation Time             State
+------------------------------------------------------------
+
+[root@kvm2 ~]# virsh snapshot-create centos78
+Domain snapshot 1617600895 created
+[root@kvm2 ~]#
+[root@kvm2 ~]# virsh snapshot-list centos78
+ Name                 Creation Time             State
+------------------------------------------------------------
+ 1617600895           2021-04-05 14:34:55 +0900 shutoff
+
+[root@kvm2 ~]# virsh snapshot-create-as centos78 --name "first_ss"
+error: unknown command: 'shapshot-create-as'
+[root@kvm2 ~]# virsh snapshot-create-as centos78 --name "first_ss"
+Domain snapshot first_ss created
+[root@kvm2 ~]#
+[root@kvm2 ~]# clear
+[root@kvm2 ~]# virsh snapshot-list centos78
+ Name                 Creation Time             State
+------------------------------------------------------------
+ 1617600895           2021-04-05 14:34:55 +0900 shutoff
+ first_ss             2021-04-05 14:37:01 +0900 shutoff
+
+[root@kvm2 ~]#
+[root@kvm2 ~]# virsh snapshot-revert centos78 --snapshotname "first_ss"
+
+[root@kvm2 ~]# virsh snapshot-delete centos78 1617600895
+Domain snapshot 1617600895 deleted
+
+[root@kvm2 ~]# virsh snapshot-list centos78
+ Name                 Creation Time             State
+------------------------------------------------------------
+ first_ss             2021-04-05 14:37:01 +0900 shutoff
+
+[root@kvm2 ~]#
+
+
+
+
+
+SDN(Software Defined Network) : L3스위치의 컨트롤 플레인을 외부에 있는 컨트롤러로 연결하고 컨트롤러에서 각 장비에 필요한 기능을 구현하여 전송시킨다. 일반적으로 이러한 스위치는 오픈소스로 구성되는 경우가 많으나 특정 벤더사에서 출시한 제품도 있다. 물론 이러한 벤더사의 제품도 오픈소스를 이용하여 구현하는 경우가 대부분이다. 
+
+SDN 은 그 효과를 극대화하기 위해 NFV 와 함께 기능을 구현하는 경우가 많다. NFV(Nework Functions Virtualization) 은 과거의 물리적 장비로 동작하던 방화벽, 스위치, 라우터 등을 소프트웨어(가상화) 형태로 동작시키는 것을 의미한다. 
+
+기존의 물리적 장비로 동작하던 L3 스위치를 오픈소스에서 동작시키고 싶다면??
+이 스위치는 SDN 이 지원되어야 한다. "OpenvSwitch(ovs)"
+
+
+ ifcfg-br0
+ BRIDGE=br0
+ -> Linux Bridge : l2 only 
+
+
+--------------------------------------------------
+keduit 클라우드 데이터센터 구축 프로젝트
+- 월,화,수,목,금,토,일(월요일 오후에 발표)  
+- 월 : 자료 수집 및 토의 
+- 화 : 기본 인프라 환경 구성 
+- 수,목,금 : 프로젝트 진행, 추가요소 구성
+- 토,일 : 슬라이드 작성(PPT) 
+- 월 : 프로젝트 발표
+
+- LB 는 인터넷과 직접연결되는 네트워크와 KVM1,KVM2 와 연결되는 인터페이스 2개로 구성되어 있다.
+- KVM1,KVM2 는 LB 의 backend 인터페이스와 STG 와 연결되는 인터페이스를 갖는다
+- STG 는 스토리지이며 외부와의 직접 연결은 없다. 오직 KVM1,2 의 backend 인터페이스와만 연결된다.
+- LB의 frontend 주소는 10.5.1.X(bridge) 를 사용한다. (비대면의 경우에는 실제 컴퓨터와 동일 주소 아무거나 사용하셔도 됩니다). 이민우 -> 10.5.1.213
+
+- KVM1, KVM2 는 하이퍼바이저(KVM)가 설치되어 있으며 내부 개발자들이 필요할 때 서버를 생성하기 위해 사용한다. 
+- 가상머신은 인스턴스 형태로 설치되어야 하며(클라우드 이미지를 사용해야한다) spec 은 cpu1, ram1 , 디스크사이즈는 10GB 여야 한다.
+- 인스턴스 4대는 KVM1 에 2대, KVM2 에 2대가 배치되고 지역간 이동 가능해야한다. 또한 이 인스턴스들은 STG의 특정 디렉토리를 동시에 마운트 하여 index.html 파을 공유한다.
+- 외부 사용자들은 LB의 Front End 주소로 웹 접속을 시도하면 내부에서 동작중인 인스턴로 웹 접속이 가능하게 된다. 이때 인스턴스 들은 80번이 아닌 8080 에서 웹서비스를 제공한다. 
+
+- 인스턴스로의 직접적인 웹 접속은 외부에서 불가하다. 반드시 LB  를 통해서만 접속할 수 있어야 한다.
+- STG 도 index.html 파일이 보관된 디렉토리로 접속은 오직 KVM 에 있는 인스턴스에서만 가능해야 한다.
+
+
+- 추가요소 구성하기 (택1 이상)
+1. 가상머신(instance) 들의 트래픽 상태를 확인할 수 있는 모니털이 도구가 있어야 한다. 해당 모니터링 도구는 zabbix 또는 cacti 를 이용할 수 있다. (NMS)
+2. 설치된 인스턴스들은 모두 웹서버이다. 외부에서 웹 접속시 불법적인 접근이나 요청이 들어온다면 이를 차단하기 위한 웹 방화벽(인스턴스)을 구축하라.(mod security)
+3. (기본프로젝트가 모두 끝난다음) 
+ 
+   ----10.5.1.X-LB---------  왼쪽 구조를 아래와 같이 변경한다.
+   
+   --10.5.1.X- vyos -- LB ----  내부에 있는 LB 가 인터넷으로 연결이 
+                                가능해야한다.  
+                          ----  방화벽도 외부에서 ssh 연결이 가능해야 한다
+
+4. bash 를 사용하여 인스턴스 생성을 위한 스크립트를 작성하고 이를 통해
+   인스턴스가 설치되도록 하라. 
+   단, 클라우드 이미지는 2개정도만 사용하여 부담을 줄일것.
+   스크립트 실행시 아래와 같이 동작해야 한다.
+    
+
+   설치할 운영체제(번호선택)? : 1
+    - 1. CentOS 7.8
+    - 2. Ubuntu 18.04 
+   
+   flavor 선택(번호선택)? : 1
+    - 1. CPU 1, RAM 1G, 10G Disk
+    - 2. CPU 2, RAM 2G, 20G Disk
+
+   루트패스워드 지정 : test123
+   
+   네트워크 지정(번호선택) : 1
+    - 1. Bridge
+    - 2. NAT(default)
+    - 3. isolated(testnet)
+
+   설치확인 
+    - 설치될 운영체제 : CentOS 7.8
+    - flavor : CPU1, RAM 1G, 10G Disk
+    - 루트 패스워드 : test123
+    - 네트워크 : Bridge
+
+   설치하시겠습니까? [y/N] :   <-- 그냥 엔터면 취소, y 또는 yes, YES 를 입력해야 설치가 진행되도록
+
+   설치가 진행되는 동안 vnc 로 연결되도록 한다!!
+ 
+5. 기타(자신이 희망하는 것)
+
+
+
+
+
+
+
+
+
+

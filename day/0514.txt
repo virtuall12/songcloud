@@ -1,0 +1,70 @@
+이미지 생성 -> ftp 에 업로드 -> 스냅샷(오픈스택 설치완료:eth0,eth1) 
+ -> answer.txt 파일 이용하여 heat 설치
+ -> 외부 네트워크 설정 (br-ex)
+ -> heat 의 yml 파일 작성
+ -> 만들어둔 이미지 테스트 하기
+ -> heat 파일 이용하여 배포하기
+-------------------------- 
+오후 : GCP 설정 
+구글 클라우드에 도커 클러스터 환경 구현(kubernetes 이용)
+1. gcp
+2. 로컬에 설치(manager,worker)
+
+ k8s 는 외부 노출이 불가능하다. 노출하려면 service(네트워크 서비스) 를 이용해야 한다.
+- cluster ip
+- nodeport
+- LB
+
+
+ansible + openstack
+ansible + docker
+ansible + aws | gcp 
+
+"오케스트레이션 tool" -> 한번에 인프라와 인스턴스 | 컨테이너를 생성 및 배포 하고 이를 연결하여  즉시 서비스가 가능한 상태를 만들 수 있는 것. 
+생성된 후에는 인스턴스의 배포나 인프라의 변경이 수월하다. 
+
+-------------------------------------------------------------
+개인프로젝트 : 
+
+controller : kubernetes - master node (TOKEN 발행)
+                                                   worker node (토큰 삽입)
+
+
+설치가 마무리되면 외부 연결을 위한 br-ex 설정을 진행해야 한다.
+1. 미리 설치되어 있는 라우터와 두개의 네트워크 삭제(라우터를 먼저 삭제해야 함) - 관리에서 
+2. 외부 네트워크(br-ex) 설정
+3. 내부 네트워크 설정(private01 : 172.16.1.0/24)
+4. 라우터 생성 하면서 외부네트워크(게이트웨이 설정)와 연결하고 인터페이스에서 내부 네트워크 역시 추가해 주어야 한다.
+
+              br-ex |----Router-----| private01
+
+5. 인우씨 서버에서 WINscp, powershell  이용하여 이미지 다운로드
+6. 해당 이미지로 배포테스트(인스턴스 설치 된 뒤에 웹서버 동작상태, 도커 실행 상태 확인)
+
+------------ heat_test.txt 파일---------------------
+heat_template_version: 2015-04-30       
+                                          
+resources:                              
+  instance:                             
+    type: OS::Nova::Server              
+    properties:                         
+      flavor: m1.small                
+      image: ubuntu1804
+      networks:                         
+        - network: private01              
+      key_name: test
+      security_groups:
+        - test
+-------------------------------------------
+
+ 
+
+
+
+
+
+
+
+
+
+

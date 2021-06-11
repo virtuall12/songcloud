@@ -1,0 +1,313 @@
+index : "찾아보기", "색인"
+
+예를 들어 책 한 권에 "정보통신" 이라는 단어를 찾고싶다. 첫번째 장에서 부터 하나하나 찾을 수도 있고 가장 뒷장에 있는 색인 항목에서
+"정보통신 ------- 10, 19"  와 같이 페이지가 지정된 경우를 통해 찾을 
+수도 있다. 이때 색인을 이용하면 훨씬 더 빠른 속도로 정보를 찾을 수 있게도니다. 이를 index 라고 부른다. 
+
+뷰(view) : 가상의 테이블
+별도의 실제 테이블을 갖는 것이 아니라 일종의 원본 테이블에 대한 링크 개념이므로 별도 공간을 차지하지 않아 공간활용률을 높일 수 있다. 또한 접근권한을 별도로 부여할 수 있어 보안성을 강화할 수 있다. 
+추가적으로 이를 관리하는 사용자에게 민감한 정보는 제공하지 않을 수 있으므로 이또한 보안에 도움이 된다.
+
+트리거!!! 아주 중요 (방아쇠) -> 함수의 기능과 비슷하다. 이러한 트리거와 비슷한 기능을 클라우드 환경에서 자주 사용한다. 예를 들어 aws 에서는 람다함수 라는 것이 바로 이 트리거와 함수의 기능을 묶어놓은 것이라 할 수 있다
+(gcp -> cloud function)
+
+대표적인 사용 예)
+회원테이블을 모니터링 하다가 "DELETE" 가 발생하면 해당 정보를 별도의 deletedtable 에 저장한다. 
+
+
+트리거 : 테이블의 지정된 행, 열등을 모니터링 하고 있다가 특정 SQL 구문, 예를 들어 delete, update, insert 와 같은 명령이 실행되면 이를 별도의 테이블에 저장할 수 있도록 하는 기능.
+
+실습. 회원이 회원 탈퇴하면 "delete"가 발생하게 된다. 이 delete가 일어나면 방아쇠가 당겨지고 해당 정보를 별도의 테이블에 담는다. 이때 탈퇴한 시간을 CURDATE 를 통해 자동 기록되도록 할 수 있다.  
+
+
+DB 연결
+- 개발환경 : 통합 개발환경 소프트웨어 : IDE -> 이클립스, visual studio
+, aws 에서는 대표적으로 cloud 9 이라는 통합 개발 환경을 제공한다.
+
+
+
+웹 개발 순서
+
+계획 -> 업무분석 -> 시스템 설계 -> 프로그램 구현 -> 테스트 -> 유지보수
+
+Micro Service Architecture
+
+
+
+고객 ---> 직원 (물건구매)
+
+
+기본적인 SELECT 형식
+ 
+ SELECT 열이름 FROM 테이블명 WHERE 조건
+
+SQL의 대 소문자 구분-> 일반적으로 구분하지 않는다
+
+ testDB -> testdb 
+
+ 
+SQL 에서의 주석
+
+
+한줄 주석   : -- 한줄 주석
+여러줄 주석 : 
+/* 이것은 주석 
+ 입니다. */
+
+
+
+Mariadb 설치하기
+vi /etc/yhum.repos.d/MariaDB.repo
+
+[mariadb]
+baseurl = http://yum.mariadb.org/10.4/centos7-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+
+
+[root@kvm1 ~]# systemctl start mariadb
+[root@kvm1 ~]# systemctl enable mariadb
+
+
+
+
+
+#!/bin/bash
+
+mysql testdb -u user1 -puser1 -e 'select * from systemenv'
+mysql testdb -u user1 -puser1 -e "insert into systemenv(hostname,username,home) values ('$HOSTNAME','$USERNAME','$HOME')"
+~                                                                          
+~          
+
+
+[root@kvm1 ~]# cat test.sh 
+#!/bin/bash
+
+mysql testdb -u user1 -puser1 -e "insert into systemenv(hostname,username,home) values ('$HOSTNAME','$USERNAME','$HOME')"
+
+if [ $? -eq 0 ]
+then	
+	echo "--------------successfully inserted--------------"
+else
+	echo "wrong input detected!!!"
+	exit 0
+fi
+
+mysql testdb -u user1 -puser1 -e 'select * from systemenv'
+[root@kvm1 ~]# 
+virt-builder! virt-install  --ram 1024
+ 
+ 실습 시나리오 :
+
+ 가상머신의 이름은? : vm1 -> $vmname
+ CPU  개수는?  :  1       -> $vcpus
+ RAM(MB)?      : 1024     -> $memory
+ 
+ 이후 설치를 진행한다...
+
+ 설치가 완료되면 .. 위의정보를 DB 로 전송한다.
+
+
+ HOSTNAME    VM_NAME   CPU   RAM(MB)
+   KVM1        vm1      1      1024
+
+
+    select hostname, vmname as VM이름   from ...
+
+ table -> 열이름 : hostname(CHAR), 
+            vmname(CHAR)
+            vcpus(INT)
+            memory(INT)
+
+ mysql testdb -u user1 -puser1 -e 'select hostname as HOST명, vmname as VM이름, vcpus as CPU개수, memory as RAM사이즈(MB)  from virtual'
+
+ 
+
+[DB실습용 스크립트]
+DROP database IF exists sqldb;
+CREATE database sqldb;
+USE sqldb;
+CREATE table usertbl (
+	userid		CHAR(8) NOT NULL PRIMARY KEY,
+	name		VARCHAR(10) NOT NULL,
+	birthyear	INT NOT NULL,
+    addr		CHAR(2) NOT NULL,
+    mobile1		CHAR(3),
+    mobile2		CHAR(8),
+    height		SMALLINT,
+    mdate		DATE
+);
+CREATE table buytbl (
+	num			INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    userid		CHAR(8) NOT NULL,
+    prodname	CHAR(6) NOT NULL,
+    groupname	CHAR(4),
+    price		INT NOT NULL,
+    amount		SMALLINT NOT NULL,
+	FOREIGN KEY (userid) REFERENCES usertbl(userid)
+);
+INSERT INTO usertbl VALUES('LSG', '이승기', 1987, '서울', '011', '1111111', 182, '2008-8-8');
+INSERT INTO usertbl VALUES('KBS', '김범수', 1979, '경남', '011', '2222222', 173, '2012-4-4');
+INSERT INTO usertbl VALUES('KKH', '김경호', 1971, '전남', '019', '3333333', 177, '2007-7-7');
+INSERT INTO usertbl VALUES('JYP', '조용필', 1950, '경기', '011', '4444444', 166, '2009-4-4');
+INSERT INTO usertbl VALUES('SSK', '성시경', 1979, '서울', NULL  , NULL      , 186, '2013-12-12');
+INSERT INTO usertbl VALUES('LJB', '임재범', 1963, '서울', '016', '6666666', 182, '2009-9-9');
+INSERT INTO usertbl VALUES('YJS', '윤종신', 1969, '경남', NULL  , NULL      , 170, '2005-5-5');
+INSERT INTO usertbl VALUES('EJW', '은지원', 1972, '경북', '011', '8888888', 174, '2014-3-3');
+INSERT INTO usertbl VALUES('JKW', '조관우', 1965, '경기', '018', '9999999', 172, '2010-10-10');
+INSERT INTO usertbl VALUES('BBK', '바비킴', 1973, '서울', '010', '0000000', 176, '2013-5-5');
+INSERT INTO buytbl VALUES(NULL, 'KBS', '운동화', NULL   , 30,   2);
+INSERT INTO buytbl VALUES(NULL, 'KBS', '노트북', '전자', 1000, 1);
+INSERT INTO buytbl VALUES(NULL, 'JYP', '모니터', '전자', 200,  1);
+INSERT INTO buytbl VALUES(NULL, 'BBK', '모니터', '전자', 200,  5);
+INSERT INTO buytbl VALUES(NULL, 'KBS', '청바지', '의류', 50,   3);
+INSERT INTO buytbl VALUES(NULL, 'BBK', '메모리', '전자', 80,  10);
+INSERT INTO buytbl VALUES(NULL, 'SSK', '책'    , '서적', 15,   5);
+INSERT INTO buytbl VALUES(NULL, 'EJW', '책'    , '서적', 15,   2);
+INSERT INTO buytbl VALUES(NULL, 'EJW', '청바지', '의류', 50,   1);
+INSERT INTO buytbl VALUES(NULL, 'BBK', '운동화', NULL   , 30,   2);
+INSERT INTO buytbl VALUES(NULL, 'EJW', '책'    , '서적', 15,   1);
+INSERT INTO buytbl VALUES(NULL, 'BBK', '운동화', NULL   , 30,   2);
+
+SELECT * FROM usertbl;
+SELECT * FROM buytbl;
+
+
+select 열이름 from 테이블이름 where 조건식; 
+
+
+
+서브쿼리.. '쿼리문내에 또다른 쿼리를 둔다'
+
+예를 들어 홍길동보다 키가 큰 사람은 누구인가?? 
+1. 홍길동의 키를 먼저 조사한다. 
+select height from usertbl WHERE name='홍길동'; 
+2. 홍길동의 키를 별도로 기억한다.  홍길동의 키 => 172
+3. select * from usertbl WHERE height > 172 ; 
+
+
+
+
+
+  KVM2
+  KVM1
+  KVM4
+  KVM3
+  KVM1
+  KVM2
+  KVM5
+
+
+  KVM1     ->  kVM1 , KVM2,... 
+  KVM1
+  KVM2
+  KVM2
+  KVM3
+  KVM4
+
+
+SELECT name, MAX(height) FROM usertbl;
+
+mysql> select name, height from usertbl WHERE height = (SELECT MAX(height) FROM usertbl);
+
+ 사람들의 이름과 키를 출력해라.. 그런데.. 여기에서 말하는 키는 usertbl 에 있는 키 중에서 가장 큰 키를 의미한다.
+
+mysql> select name, height from usertbl order by height DESC limit 1;
++-----------+--------+
+| name      | height |
++-----------+--------+
+| 성시경    |    186 |
++-----------+--------+
+1 row in set (0.00 sec)
+
+사람들의 이름을 키 순서대로 정렬하라.. 그리고 출력은 1명만 하라
+
+
+SQL 구문(명령어)의 종류
+
+- DML : SELECT, INSERT, UPDATE, DELETE ... (데이터 자체를 다룬다)  
+- DDL : CREATE, DROP, ALTER  (데이터베이스, 테이블 전체를 다룬다)
+- DCL : GRANT/REVOKE/DENY               (권한부여 및 접근제어)    
+
+
+데이터삽입
+insert into usertbl values (열이름 순서대로 데이터 입력해야 함)
+insert into usertbl values ( 'adb', '이승기', 1978 ...)
+insert into usertbl(userid, username, birthyear) values ('abc', '이승기
+  NULL 이 허용되지 않는 것은 반드시 포함해야한다.
+
+insert into usertbl(username, userid,..) values ('이승기', 'abc',...)
+
+
+
+
+AUTO_INCREMENT -> 자동으로 번호를 부여한다. 사용자가 직접 입력하지 않아도 자동으로 번호가 부여되므로 보통 쇼핑몰의 주문번호나 회사의 사번 등에 활용할 수 있다. 단,NULL 은 허용되지 않는다. 또한 데이터도 직접 입력하지 않는다. 
+
+시작번호는 1, 증감번호 : 1 -> 변경가능하다.
+
+일반적으로  id -> PK, 주민등록번호 -> unique (NULL 허용)
+
+
+mysql> ALTER table testtbl2 AUTO_INCREMENT=100;
+mysql> SET @@auto_increment_increment=3;
+
+100
+103
+106
+
+UPDATE <--- DML(데이터 조작, 데이터의 내용을 수정)
+ UPDATE 테이블이름 SET 키=185, 집주소=용인 WHERE name=홍길동;
+ WHERE 를 빼면??? 
+mysql> update testtbl2 set addr='경기 광명시' ;
+위와 같이 조건절이 없다면 테이블의 모든 열이름 addr 이 '경기 광명시' 로 바뀐다. 조심해야 한다!! 
+
+DELETE <--- DML(데이터를 삭제)
+ DELETE FROM 테이블이름 WHERE name=홍길동;
+
+
+inner join 형식
+select 열목록
+from <첫번째 테이블>
+   INNER JOIN <두번째 테이블>
+   ON <조인될 조건>
+[검색조건]
+
+mysql> select U.name, U.addr, CONCAT(U.mobile1, U.mobile2) as '휴대폰번호' , B.prodname
+    -> FROM buytbl B
+    -> INNER JOIN usertbl U
+    -> ON B.userid = U.userid
+    -> WHERE B.userid = 'kbs';
+
+
+ hosttbl  -- 모두가 NOT NULL
+   hostname CHAR(20) "PK"
+   ipaddr   CHAR(15) 
+   cpurate  INT 	
+ 
+ vmtbl    -- 모두가 NOT NULL
+   hostname CHAR(20) 
+   vmname   CHAR(20) "PK"
+   vcpus    INT
+   memory   INT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

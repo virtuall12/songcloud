@@ -1,0 +1,135 @@
+index : "찾아보기", "색인"
+
+예를 들어 책 한 권에 "정보통신" 이라는 단어를 찾고싶다. 첫번째 장에서 부터 하나하나 찾을 수도 있고 가장 뒷장에 있는 색인 항목에서
+"정보통신 ------- 10, 19"  와 같이 페이지가 지정된 경우를 통해 찾을 
+수도 있다. 이때 색인을 이용하면 훨씬 더 빠른 속도로 정보를 찾을 수 있게도니다. 이를 index 라고 부른다. 
+
+뷰(view) : 가상의 테이블
+별도의 실제 테이블을 갖는 것이 아니라 일종의 원본 테이블에 대한 링크 개념이므로 별도 공간을 차지하지 않아 공간활용률을 높일 수 있다. 또한 접근권한을 별도로 부여할 수 있어 보안성을 강화할 수 있다. 
+추가적으로 이를 관리하는 사용자에게 민감한 정보는 제공하지 않을 수 있으므로 이또한 보안에 도움이 된다.
+
+트리거!!! 아주 중요 (방아쇠) -> 함수의 기능과 비슷하다. 이러한 트리거와 비슷한 기능을 클라우드 환경에서 자주 사용한다. 예를 들어 aws 에서는 람다함수 라는 것이 바로 이 트리거와 함수의 기능을 묶어놓은 것이라 할 수 있다
+(gcp -> cloud function)
+
+대표적인 사용 예)
+회원테이블을 모니터링 하다가 "DELETE" 가 발생하면 해당 정보를 별도의 deletedtable 에 저장한다. 
+
+
+트리거 : 테이블의 지정된 행, 열등을 모니터링 하고 있다가 특정 SQL 구문, 예를 들어 delete, update, insert 와 같은 명령이 실행되면 이를 별도의 테이블에 저장할 수 있도록 하는 기능.
+
+실습. 회원이 회원 탈퇴하면 "delete"가 발생하게 된다. 이 delete가 일어나면 방아쇠가 당겨지고 해당 정보를 별도의 테이블에 담는다. 이때 탈퇴한 시간을 CURDATE 를 통해 자동 기록되도록 할 수 있다.  
+
+
+DB 연결
+- 개발환경 : 통합 개발환경 소프트웨어 : IDE -> 이클립스, visual studio
+, aws 에서는 대표적으로 cloud 9 이라는 통합 개발 환경을 제공한다.
+
+
+
+웹 개발 순서
+
+계획 -> 업무분석 -> 시스템 설계 -> 프로그램 구현 -> 테스트 -> 유지보수
+
+Micro Service Architecture
+
+
+
+고객 ---> 직원 (물건구매)
+
+
+기본적인 SELECT 형식
+ 
+ SELECT 열이름 FROM 테이블명 WHERE 조건
+
+SQL의 대 소문자 구분-> 일반적으로 구분하지 않는다
+
+ testDB -> testdb 
+
+ 
+SQL 에서의 주석
+
+
+한줄 주석   : -- 한줄 주석
+여러줄 주석 : 
+/* 이것은 주석 
+ 입니다. */
+
+
+
+Mariadb 설치하기
+vi /etc/yum.repos.d/MariaDB.repo
+
+[mariadb]
+baseurl = http://yum.mariadb.org/10.4/centos7-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+
+
+[root@kvm1 ~]# systemctl start mariadb
+[root@kvm1 ~]# systemctl enable mariadb
+
+
+
+
+
+#!/bin/bash
+
+mysql testdb -u user1 -puser1 -e 'select * from systemenv'
+mysql testdb -u user1 -puser1 -e "insert into systemenv(hostname,username,home) values ('$HOSTNAME','$USERNAME','$HOME')"
+~                                                                          
+~          
+
+
+[root@kvm1 ~]# cat test.sh 
+#!/bin/bash
+
+mysql testdb -u user1 -puser1 -e "insert into systemenv(hostname,username,home) values ('$HOSTNAME','$USERNAME','$HOME')"
+
+if [ $? -eq 0 ]
+then	
+	echo "--------------successfully inserted--------------"
+else
+	echo "wrong input detected!!!"
+	exit 0
+fi
+
+mysql testdb -u user1 -puser1 -e 'select * from systemenv'
+[root@kvm1 ~]# 
+
+
+ 실습 시나리오 :
+
+ 가상머신의 이름은? : vm1 
+ CPU  개수는?  :  1
+ RAM(GB)?      : 1
+ 
+ 이후 설치를 진행한다...
+
+ 설치가 완료되면 .. 위의정보를 DB 로 전송한다.
+
+
+ HOSTNAME    VM이름   CPU   RAM(GB)
+   KVM1       vm1      1      1
+
+
+    select hostname, vmname as VM이름   from ...
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

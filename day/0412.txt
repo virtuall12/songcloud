@@ -1,0 +1,66 @@
+프로젝트 설문
+https://moaform.com/q/oP5oON
+
+구글 클래스 룸
+https://classroom.google.com/c/MzE0NjE4NjQ5ODc1?cjc=xhubore
+
+4월 12일
+
+
+4월 13일
+- 국정완
+- 민형기
+- 이민우
+- 민준원
+- 김준혁
+
+- 조형순(발표영상 별도 제출)
+
+
+파일명
+
+01.홍길동
+
+
+11.박철훈
+
+
+
+  (rw,sync,no_root_squash)
+
+
+------------ 웹폰트 실습 ------------
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Web Font Test</title>
+	<style>
+		@font-face {
+			font-family: "NanumBarunGothic";
+			src: url("https://drive.google.com/file/d/1UbuTkQQUn1sdHSzy9rtEIRNL4qo1v4Cq/view?usp=sharing");
+		}
+		body { font-family: "NanumBarunGothic", serif }
+	</style>
+</head>
+<body>
+	<h2>
+	웹폰트 테스트
+	</h2>
+	<hr>
+	이것은 네이버에서 제공하는 "나눔바른고딕" 체 입니다	
+	
+</body>
+</html>
+
+https://www.webpagetest.org/
+
+
+
+  bt78kim@gmail.com
+
+
+
+https://downloads.mysql.com/archives/get/p/25/file/mysql-installer-community-8.0.22.0.msi
+
+
+

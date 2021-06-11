@@ -1,0 +1,158 @@
+실습용 윈도우 서버 다운로드
+\\10.5.1.100\cloud\utils\서버
+
+
+VMware vSphere : 
+ESXi -> hypervisor
+vCenter -> 하이퍼바이저를 통합관리하기 위한 서버(클러스터 구성)
+web client, vsphere client, power shell .. 
+
+vCenter 의 설치 : 
+1. 윈도우 서버에 iso 파일을 이용하여 설치 -> 윈도우 자체 기능인 AD 를 사용할 수 있다.
+2. appliance ova 파일(리눅스) : 리눅스에 vCenter 를 설치해 두었고 이를 이용하여 vCenter  를 사용할 수 있다. 
+
+vCenter 에 들어가는 DBMS 는 윈도우의 MSSQL, Oracle, MySQL 등을 사용할 수 있으며 규모가 크지 않은 회사의 경우에는 vCenter 에 내장된 DB 를 사용할 수 있다. 
+
+vmnet1: -> management (vCenter-ESXi 간 연결)
+vmnet2: -> NFS(ESXi-Storage 간 연결)  192.168.2.X
+esxi1     esxi2     nfs_server
+  11           12            13 
+
+vmnet3: -> vMotion(ESXi 간에 VM 을 이동시키기 위한 용도)
+vmnet4: -> FT
+
+vmnet8(NAT): -> (VM 배치용-VM  외부 연결용)
+
+1~4 : VMKernel PortGroup
+8 : vm portgroup
+
+1. nfs 서버 준비하기(NFS 서버의 NIC 는 vmnet2 번으로 변경한 뒤)
+vi /etc/sysconfig/net... 
+IPADDR = 192.168.2.13
+systemctl restart network
+
+mkdir /disk1 /disk2
+
+vi /etc/exports
+/disk1    192.168.2.0/24(rw,sync,no_root_squash)
+/disk2    192.168.2.0/24(rw,sync,no_root_squash)
+
+systemctl restart nfs-server
+
+2. esxi 설정하기
+첫번째 vmnet1 인터페이스만 설정(vmnic0)
+esxi_1 : 192.168.1.11 (esxi_1.test.pri)
+esxi_2 : 192.168.1.12 (esxi_2.test.pri)
+
+콘솔화면에서 F2 키로 진입 -> root/test123 으로 로그인
+-> Configure management -> Network adapter 에서 vmnic0을 확인한 다음 수정하지 말고, IP Configuration 으로 이동 -> dynamic  으로 되어 있는 것 말고 그 아래에 있는 static 으로 이동한 다음 "space bar" 를 누르고 IP, Subnet 마스크 입력한다. -> DNS Configuration 으로 이동 -> hostname 만 변경한다(esxi1.test.pri, esx2.test.pri)-> esc 키를 누르면 저장후 빠져나갈 것인지를 물어본다. 이때 Y 를 입력하면 끝!!
+
+3. vCenter 에서 두 호스트(esxi1, esxi2) 를 등록한다.
+
+
+
+4. vCenter 에서 NFS 서버를 등록한다.
+
+
+
+
+스위치 구분
+1. 표준 스위치  : 각 호스트별로 사용하는 독립적인 가상 스위치 
+2. 분배 스위치  : 클러스터 전체에 걸쳐 사용하는 가상의 클러스터 가상 스위치(overlay network)
+
+
+vMotion 
+- VM vMotion  :  가상머신 자체의 컴퓨팅 자원을 이동 시키는 것
+- Storage vMotion :  가상머신의 디스크를 이동시키는 것
+vMotion 은 클러스터환경이 아니더라도 동작한다. 
+
+ 실습)
+ esx1에서 WIN7 가상머신을 하나 만들고.. 
+  - ISO 는 substg 내에 iso 폴더를 하나 만들고 여기에 올려두세요
+  - 가상머신의 디스크는 substg 로 지정하세요
+
+ 이동이 되는지 확인해 보세요
+
+ - RAM : 2G, CPU : 2, DISK : 20
+
+ 설치는 정상적으로 진행되었는데도 마이그레이션에서 문제가 발생한다면 vCenter 를 재 실행 하면 해결됨!!!
+
+
+1. 최근에는 화상면접 빈도가 늘어나고 있음
+서울관악센터에서 모집중인 제 3회 [화상 취업면접 코칭] 과정 일정이 나와 안내드립니다.
+
+- 운영: 서울관악센터 취업지원총괄팀
+- 진행: (주)제니엘 강사
+- 내용: 첫째, 자기소개와 지원동기
+          둘째, 회사 족보질문
+          셋째, 전공 및 업무 관려 예상질문
+- 개최: 5/28 오후 2시 ~ 4시
+(회당 5명~7명(소수-실습형 교육), 강의(2시간)
+- 장소: 센터 프로그램실(훈련생들은 재택으로 URL 접속 후 참여)
+
+ 참여희망하시는 분들은 5층 데스크 박병석에게 신청 .. 
+
+
+2. 
+https://www.jobkorea.co.kr/Recruit/GI_Read/34697345?Oem_Code=C1&sc=7
+https://www.jobkorea.co.kr/Recruit/GI_Read/34740410?Oem_Code=C1&sc=7
+https://www.jobkorea.co.kr/Recruit/GI_Read/34527821?Oem_Code=C1&sc=7
+https://www.jobkorea.co.kr/Recruit/GI_Read/33970794?Oem_Code=C1&sc=7
+
+
+
+
+
+
+ vmware -> vm life cycle : 
+                  -> role, access-control 
+
+
+root 는 건드리지 말것!!
+
+user1 은  websrv 클러스터 관리자
+클러스터 내부에서 user2 가 가상머신을 사용할 수 있도록 권한을 부여한다. 이후 user2 가 로그인하여 가상머신을 생성할 수 있어야 한다. 
+
+사용자를 user3 을 만들고, user3 은 WIN7을 사용할 수 있는 사용자이다.
+WIN7을 실행하고 제어판은 걸드릴 수 없다!!! 
+
+
+
+
+aws 서비스
+- ec2 (VPC - virtual private cloud) 
+- RDS(Database,RDBMS)/DynamoDB(NoSQL) 
+- EBS(elastic block store)/S3(file storage)
+- Function(함수) : 람다(lambda-python,node.js,php,c++,java,javascript.. + aws 의 서비스) - serverless : 15초이내에 서비스가 실행되어야 한다. (cloud function@gcp)
+
+
+
+
+
+
+
+aws 에서 사용하는 대표적인 보안 기능
+- 1 : IAM (사용자 인증)
+ 각 사용자에게  aws 내에서 사용할 수 있는 서비스와 그 서비스에서의 role 을 지정한다.  "user1 사용자는 ec2 서비스에서 ec2생성/수정 가능하다. 하지만 삭제는 안된다"
+
+- 2 : SG(Security Group) : 특정 포트 허용을 위한 용도로 사용
+                                                  : 각각의 인스턴스에 적용한다. 
+
+- 3:  ACL(Access Control List) : 허용/차단 모두 가능하며 주로 차단에 목적, 주로 VPC 내에서 세그먼트 단위에서 적용한다.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

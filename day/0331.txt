@@ -1,0 +1,274 @@
+IP : 사람의 이름(선우 용녀)
+- 사설 : $ 지불하지 않는다
+- 공인 : $ 지불한다 -> ISP
+
+168.126.63.0/28 -> 63.0 ~ 63. 
+
+  /28
+  255.255.255.240
+
+  192.168.1.0 255.255.255.0
+              11111111.11111111.11111111.00000000 
+              연속된 1 : 네트워크 범위
+              연속된 0 : 호스트 범위
+
+ 192.168.1.(0 ~ 255) -> 처음과 마지막은 예약
+  192.168.1.0 : 네트워크 주소
+  192.168.1.255 : 브로드캐스트 주소
+  192.168.1.1 ~ 192.168.1.254 : 호스트 주소로 사용가능(PC에 할당가능)
+
+
+
+168.126.63.0/28  NNNNNNNN.NNNNNNNN.NNNNNNNN. NNNN HHHH
+               
+
+
+
+
+unicast   : 1:1
+broadcast : 1:전부
+multicast : 1:특정다수 -> 기본적인 동작 방식은 브로드캐스트와 유사하다. 화상회의에서 주로 사용하는 방식
+
+  OSPF -> hello, update, request, ack 와 같은 메시지를 ____ 로 보낸다.  224.0.0.5, 224.0.0.6(multicast)
+  EIGRP -> 224.0.0.10(multicast)`
+
+
+ 192.168.1.0/27 의 범위는???
+
+            N-. N-. N-. NNN H HHHH
+
+ 192.168.1.128/29  ??? 
+               N-. N-. N-. NNNN N HHH
+
+
+NAT(Network Address Translation) 
+정적 : 특정 공인주소를 특정 사설 주소와 정적으로 매핑. 클라우드에서 주로 사용하는 방법. aws->elastic IP, openstack -> floating IP
+
+동적 : 공인주소 전체를 주소 풀에 넣어두고 사설 주소가 인터넷으로 나갈때 풀에서 공인주소를 동적으로 할당받아 사용하는 방법. 고정되지는 않는다. 
+
+PAT(Port Address Translation, = NAT overload)
+공인주소가 1개 있는 경우 다수의 사설 주소가 한개의 공인주소를 공유하여 사용하는 방법.
+
+일반적으로 내부의 다수 사설 주소가 인터넷으로 나갈 때에는 동적 PAT
+반대로 외부에서 내부의 사설 주소로 접속을 할 때에는 정적 PAT 를 사용
+
+
+NAT(config)# ! Dynamic PAT
+NAT(config)# access-list 1 permit 172.16.1.0 0.0.0.255
+NAT(config)# ip nat inside so list 1 int fa0/0 overload
+NAT(config)#
+NAT(config)# int fa0/0
+NAT(config-if)# ip nat outside
+NAT(config-if)#
+NAT(config-if)# int fa0/1
+NAT(config-if)# ip nat inside
+NAT(config-if)# exit
+NAT(config)#
+NAT(config)# ! Static PAT | http://10.5.1.220:8888
+NAT(config)# ip nat inside so static ?
+  A.B.C.D  Inside local IP address
+  esp      IPSec-ESP (Tunnel mode) support
+  network  Subnet translation
+  tcp      Transmission Control Protocol
+  udp      User Datagram Protocol
+
+
+NAT(config)# ip nat inside so static tcp 172.16.1.100 80 int fa0/0 8888
+
+
+결국 NAT, PAT 모두 서버와 같이 고정된 주소에서 서비스를 제공하고 싶다면 정적방법을 선택해야 안정적인 서비스를 제공할 수 있게된다.
+
+
+
+라우팅 : 정적/동적 라우팅
+- 정적 : 관리자가 직접 경로를 작성하는 방법
+
+   ip route 172.16.1.0 255.255.255.0 2.2.2.2
+       172.16.1.0 ~ 172.16.1.255
+   라우터 내부로 유입된 패킷의 목적지 주소가 위의 범위에 해당한다면 해당 패킷을 2.2.2.2 로 전송해 준다.
+   단방향, 반대쪽에서도 설정해 주어야 한다. 
+
+- 동적 : 라우터간 라우팅 프로토콜을 이용하여 최적경로를 선택하고 해당 경로를 라우팅 테이블에 위치시켜 패킷이 이를 참조하여 경로를 찾는 방법 
+
+
+overlay 네트워크 : 주로 클라우드와 가상화 환경에서 사용하는 개념
+물리적으로 떨어져 있는 동일 네트워크 주소를 오버레이 네트워크를 통해 마치 한곳에 모여있는 네트워크 인것 처럼 만들어 줄 수 있다.
+- GRE 터널
+- VxLAN **
+이를 이용하여 물리적으로 떨어져 있는 호스트들을 하나의 L2 구간에 논리적으로 배치할 수 있다. 
+
+[리눅스 실습환경 만들기]
+
+ hostname     ens32                   ens33
+    
+  webwas  211.183.3.101 DG:3.2     192.168.1.101, DG/DNS없음
+
+  dbms    211.183.3.102 DG:3.2     192.168.1.102, DG/DNS없음
+
+              dns:8.8.8.8
+
+              ONBOOT=yes               ONBOOT=yes
+
+ - 두 서버에서 yum -y install mysql
+ - webwas 에서 아래의 패키지 설치
+    yum -y install httpd php php-mysql
+ 
+
+
+
+
+1. cd /etc/sysconfig/network-scripts/
+2. mv ifcfg-ens33 ifcfg-eth1
+3. sed -i 's/ens33/eth1/g' ifcfg-eth1
+4. vi ifcfg-eth1 에서 불필요한 내용들 삭제
+5. grub2-mkconfig -o /boot/grub2/grub.cfg 하여 변경된 내용을 반영
+6. reboot 하여 변경된 인터페이스 이름과 주소 확인!!!
+
+
+3 tier
+
+         WEB 서버 --- WAS -------- DBMS
+         httpd ---> tomcat -------> oracle, mariadb, mysql...
+      html, css     PHP, golang
+                    asp, jsp, python
+                       ----------> bash                 
+ 
+
+
+ 대량의 트래픽이 내부로 유입되는 경우 이를 적절히 처리할 수 있는 능력이 필요하다. 대표적으로 scale 에 대한 구성이다.
+
+
+ scale up : 수직 확장 , 한 대의 서버에서 물리자원을 늘리는 방법
+ scale out : 수평 확장, 한 대의 서버와 동일한 서버를 추가로 늘인다. 
+
+ 클라우드 환경에서는 기업용 서버는 "Scale out" 을 주로 사용하며, 개인용은 비용의 부담으로 인해 scale up 을 주로 사용한다. 
+
+ CSP(aws,gcp..)에서는 간편히 scale out 설정이 가능하다. 
+
+
+
+[MySQL 설치하기@dbms]
+yum -y install wget 
+wget https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+rpm -ivh mysql57-community-release-el7-11.noarch.rpm
+yum -y install mysql-server
+
+[설치확인]
+systemctl restart mysqld
+systemctl status mysqld   -> Active 를 확인한다. 
+
+
+
+DBMS에서 원격지에 있는 root 로의 로그인을 허용하기 위한 설정
+mysql> create user 'root'@'%' identified by 'TEst123!';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> grant all privileges on *.* to 'root'@'%';
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql>
+
+위의 설정이 완료되면 원격지(webwas)에서 접속해 본다
+# mysql -h dbms -u root -p
+Password : TEst123!
+
+원격지에서 접속한 클라이언트에서 sql 을 이용하여 
+1. DB 생성
+2. DB 에 테이블 생성하며 간단한 데이터 입력
+3. 생성된 데이터베이스로의 접속 상태를 웹에서 확인하기
+4. 이를 bash 에서 조작하기
+5. 데이터베이스를 클라우드에 설치하고 로컬 웹서버에서 연결하기
+
+
+MySQL [test]> create table member (memid int not null, lastname varchar(10), firstname varchar(20), mileage float, primary key (memid));
+
+
+웹에서 DB 연결을 확인하기 위한 PHP코드
+<?php
+        $hostname = 'dbms';
+        $user = 'root';
+        $pass = 'TEst123!';
+        $dbname = 'test';
+
+        $mysqli = new mysqli($hostname, $user, $pass, $dbname);
+
+        if($mysqli){
+                echo "DATABASE CONNECTED :-)";
+        }else{
+                echo "CONNECTION FAILED :-(";
+        }
+?>
+
+wha
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

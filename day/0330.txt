@@ -1,0 +1,250 @@
+[easy/ssl vpn] 
+https://drive.google.com/file/d/1XI3u4lxdp9YJPGThxeSpt2_MfTkStpfZ/view?usp=sharing
+
+VPN(Virtual Private Network)
+- 본사와 지사간 연결
+- 회사와 회사(파트너사)
+- easyVPN = sslvpn (회사 <==> 개인) 
+- 인터넷을 거쳐 사설 주소간 통신이 가능해 진다. 또한 해당 데이터를 암호화, 무결성검사, 인증(PSK,RSA) 을 거친후 통신 하므로 안전한 데이터 통신이 가능해 진다.
+
+Site-to-Site VPN : 회사와 회사를 1:1 로 연결하는 방식
+반드시 VPN 장비가 필요하다!!
+
+[실습환경 구성하기]
+INT(config)# int fa0/1
+INT(config-if)# ip add 12.12.12.1 255.255.255.0
+INT(config-if)# no sh
+INT(config-if)#
+INT(config-if)# int fa1/0
+INT(config-if)# ip add 23.23.23.1 255.255.255.0
+INT(config-if)# no sh
+INT(config-if)#
+INT(config-if)# int fa0/0
+INT(config-if)# ip add 211.183.3.3 255.255.255.0
+INT(config-if)# no sh
+INT(config-if)#
+INT(config-if)# ip route 0.0.0.0 0.0.0.0 211.183.3.2
+INT(config)#
+INT(config)#
+INT(config)# access-list 1 per 12.12.12.0 0.0.0.255
+INT(config)# access-list 1 per 23.23.23.0 0.0.0.255
+INT(config)#
+INT(config)# ip nat inside so list 1 int fa0/0 overload
+INT(config)#
+INT(config)# int fa0/0
+INT(config-if)# ip nat outside
+INT(config-if)#
+INT(config-if)# int range fa0/1 , fa1/0
+INT(config-if-range)# ip nat inside
+INT(config-if-range)#
+
+
+
+
+IPTIME 에서 DHCP 서버 구성하기
+- 제공할 주소 네트워크 : 192.168.1.0/24
+- 클라이언트가 주소 요청시 제공할 주소의 범위 : 192.168.1.101 ~
+- DNS 서버 주소 : 168.126.63.1, 168.126.63.2
+- 임대기간 : 2시간 
+- PC 에게 제공할 기본 게이트웨이 주소 : 192.168.1.2
+- 도메인 주소 : iptime.com 
+
+
+IPTIME(config)# int fa0/0
+IPTIME(config-if)# ip add 12.12.12.2 255.255.255.0
+IPTIME(config-if)# no sh
+IPTIME(config-if)#
+IPTIME(config-if)# int fa0/1
+IPTIME(config-if)# ip add 192.168.1.2 255.255.255.0
+IPTIME(config-if)# no sh
+IPTIME(config-if)#
+IPTIME(config-if)# ! default route configuration
+IPTIME(config-if)# ip route 0.0.0.0 0.0.0.0 12.12.12.1
+IPTIME(config)#
+IPTIME(config)# ! NAT(Dynamic PAT) Configuration
+IPTIME(config)# access-list 1 per 192.168.1.0 0.0.0.255
+IPTIME(config)#
+IPTIME(config)# ip nat inside so list 1 int fa0/0 overload
+IPTIME(config)#
+IPTIME(config)# int fa0/0
+IPTIME(config-if)# ip nat outside
+IPTIME(config-if)#
+IPTIME(config-if)# int fa0/1
+IPTIME(config-if)# ip nat inside
+IPTIME(config-if)#
+IPTIME(config-if)# exit
+IPTIME(config)#
+IPTIME(config)# ! DHCP Server Configuration on Cisco Router
+IPTIME(config)# ip dhcp excluded-address 192.168.1.1 192.168.1.100
+IPTIME(config)#
+IPTIME(config)# ip dhcp pool IPTIME
+IPTIME(dhcp-config)# network 192.168.1.0 /24
+IPTIME(dhcp-config)# dns 168.126.63.1 168.126.63.2
+IPTIME(dhcp-config)# default-router 192.168.1.2
+IPTIME(dhcp-config)# lease 0 2
+IPTIME(dhcp-config)# domain iptime.com
+IPTIME(dhcp-config)#
+
+
+
+[VPNGW]
+int fa0/0 
+ ip add 23.23.23.2 255.255.255.0
+ no sh
+int fa1/0
+ ip add 192.168.2.2 255.255.255.0
+ no sh
+!
+ip route 0.0.0.0 0.0.0.0 23.23.23.1
+!
+username user1 priv 15 password user1
+username user2 priv 15 password user2
+!
+ip http server
+ip http secure-server
+ip http authentication local
+!
+
+
+
+easyVPN 
+- 원격접속을 위해서 설정해 두어야 할 사항들
+ 1. vpn gateway 주소
+ 2. group policy -> 그룹별로 key, pool(IP,DNS,Split-tunnel)
+    일반적으로 (easy,ssl) VPN 연결을 하게 되면 보안을 위해서 인터넷 연결은 불가능해 진다. 하지만 인터넷 연결이 동시에 필요한 경우에는 split-tunnel 을 구성하여 이를 해결할 수 있다. 
+
+ 3. 계정정보 예)username user1 password user1
+
+easy vpn 은 VPN 장비를 이용하여 접속하기 어려운 PC(랩탑,데스크탑) 에서 주로 사용하는 방법이며, 만약 해당 소프트웨어가 없다면 VPN 장비가 없는 것과 동일하므로 접속이 불가하다.
+
+외부에서 접속시 이러한 소프트웨어 대신 웹 브라우저만으로 접속하고 싶다면 이때 이용하는 VPN이 SSLVPN 이다.
+
+SSL VPN 은 아래와 같은 두가지 접속 모드를 지원한다.
+- Clientless WebVPN : web browser 를 이용한다
+- Anyconnect VPN : easy VPN 과 비슷하게 anyconnect  라는 소프트웨어를 이용하여 접속하는 방법
+
+
+
+SSL VPN 을 위한 방화벽 인터페이스
+host-only (management 0/0)
+vmnet3    (g0/0)
+vmnet2    (g0/1)
+host-only (g0/2)
+
+
+
+
+int g0/1
+ nameif inside
+ ip add 192.168.2.2 255.255.255.0
+ no sh
+!
+telnet 0 0 inside
+telnet timeout 1440
+!
+passwd cisco
+!
+username user1 password user1 priv 15
+!
+enable password cisco
+!
+show disk0:   를 하여 "asdm-721.bin",
+ "anyconnect-win-3.1.....pkg"
+
+- 시나리오 :
+SSL VPN 을 구축하고 외부에서 접속하는 사용자가 인증에 성공하면
+192.168.5.0/24 의 주소를 할당해 준다. 또한 split-tunnel 을 구성하여
+VPN 과 인터넷을 동시에 사용할 수 있도록 구성한다.
+
+처음 접속은 웹브라우저를 통해 접속할 것이고 해당 접속에서 anyconnect 를
+다운로드하여 설치한 뒤, 두번째 접속 부터는 이를 이용하여 접속한다.
+
+
+  config t
+  int g0/0
+  nameif outside
+  ip add 192.168.3.2 255.255.255.0
+  no sh
+  ip add 192.168.3.3 255.255.255.0
+  ping 192.168.3.2
+  route outside 0 0 192.168.3.2
+  ping 8.8.8.8
+  ping 12.12.12.2
+  object network INSIDE
+  subnet 192.168.2.0 255.255.255.0
+  nat (inside,outside) dy int
+  exit
+  webvpn
+  anyconnect image disk0:/anyconnect-win-3.1.05152-k9.pkg
+  enable outside
+  anyconnect enable
+  exit
+  sysopt connection permit-vpn
+  http redirect outside www
+  ip local pool VPNpool 192.168.5.101-192.168.5.119 mask 255.255.255.0
+  object network obj-local
+  subnet 192.168.2.0 255.255.255.0
+  exit
+  object network obj-vpnpool
+  subnet 192.168.5.0 255.255.255.0
+  exit
+  nat (inside,outside) source static obj-local obj-local destination static obj-vpnpool obj-vpnpool
+  access-list split-tunnel standard per 192.168.2.0 255.255.255.0
+  group-policy Anyconnect-Policy internal
+  group-policy Anyconnect-Policy attributes
+  vpn-tunnel-protocol ssl-client ssl-clientless
+  split-tunnel-policy tunnelspecified
+  split-tunnel-network-list value split-tunnel
+  dns-server value 192.168.2.222
+  webvpn
+  anyconnect keep-installer installed
+  anyconnect ask none default anyconnect
+  anyconnect dpd-interval client 20
+  tunnel-group sales type remote-access
+  tunnel-group sales general-attributes
+  default-group-policy Anyconnect-Policy
+  address-pool VPNpool
+  exit
+  tunnel-group sales webvpn-attributes
+  group-alias group_sales enable
+  exit
+  webvpn
+  onscreen-keyboard logon
+  tunnel-group-list enable
+  exit
+  username user10 password *****
+  username user10 attributes
+  service-type remote-access
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+https://s3.amazonaws.com/s3-us.vyos.io/vyos-1.1.8-amd64.iso
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

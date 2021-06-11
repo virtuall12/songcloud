@@ -1,0 +1,313 @@
+[실습 점검 사항]
+1. vmware workstation 을 실행하기 전에 네트워크 환경에서 vmnet1 을 down -> up
+2. storage -> kvm1 -> kvm2 순서대로 실행하되, storage 가 완전히 실행된 뒤에 kvm1,2 를 실행
+3. kvm1,2 에서 
+# mount | grep /vm   을 하여 마운트 정보를 확인한다.
+
+만약 마운트 되지 않았다면...
+storage 에서 방화벽 해제 상태(systemctl status firewalld), nfs 서버 실행상태 (systemctl status nfs-server) 를 확인한다.
+
+kvm1, 2 에서는 ip 정보를 확인하고 다시 마운트 해 본다
+
+그래도 안되면.... 저에게 알려주세요
+
+4. storage  에서 /vm 디렉토리로 이동하여 #wget https://ftp.zetta.net.au/pub/linux/vyos/iso/release/1.1.8/vyos-1.1.8-amd64.iso 
+
+
+NM_CONTROLLED = NetworkManager -> 일반적인 서버에서는 사용할 일이 거의 없다. 보통 데스크탑용으로 그래픽 환경이 필요한 곳에서 사용한다. GUI 관리페이지에서 IP를 변경할 경우 별도의 데몬 재실행이 없더라도 변경사항을 시스템에 즉시 반영할는경우, 무선 연결 등에 사용하는데.. 서버의 경우에는 이를 이용하지 않고 일반적으로 파일변경->데몬 재실행을 이용하여 네트워크 환경을 변경시키므로 네트워크 매니저를 실행해 둘 필요가 없다. 
+
+ 설정파일에는 NM_CONTROLLED=no
+ 쉘에서는 systemctl stop NetworkManager 
+
+
+ kvm  을 동작시키기 위한 데몬 : libvirtd
+ vm, 가상 네트워크 관리 도구 : GUI -> virt-manager, kimchi(wokd)
+                               CLI -> virsh 
+
+ CLI 기반으로 VM : virt-install
+ 가상머신, 네트워크 관리를 위한 쉘 : virsh 
+ 
+ 가상머신을 만들면 외부와의 연결등은????
+
+ ifconfig -> virbr0
+ KVM 을 설치하면 자동으로 virbr0 라는 브릿지가 설치되고 이 브릿지(스위치)는 default 네트워크를 연결하기위한 용도로 사용된다.
+ default 네트워크 : NAT, 192.168.122.0/24  
+ virbr0 -> 192.168.122.1
+
+
+ vyos -> debian 기반의 오픈소스 방화벽, 라우터, VPN 기능을 갖는 소프트웨어장치
+
+[root@kvm1 ~]# virt-install --name fw1 --vcpus 1 --ram 512 \
+> --network network:default --graphics vnc,port=5901 \
+> --disk path=/vm/fw1.img,size=5 \
+> --cdrom /vm/util/vyos-1.1.8-amd64.iso 
+
+vyos 에서의 설정
+
+ $    <------ 구성에 의해서 현재 설정되어 있는 상태를 확인할 수 있음
+ $ config
+ # set int eth eth0 address 192.168.122.101/24
+ # set protocols static route 0.0.0.0/0 next-hop 192.168.122.1
+ # commit  <---- 구성값에 의한 활성화
+ # save    <---- 활성화된 값을 저장, 재부팅이후에도 값이 유지된다.
+
+ kvm 에서 가상머신으로 연결되어 있는 상태에서 화면이 닫혔을 경우 재 연결하려면???
+
+ # virsh list --all   하여 동작중인 가상머신의 id, 이름을 확인한다.
+ # virt-viewer  이후에 아래와 같이 id 번호나 이름을 입력하면 연결된다.
+ 
+   virt-viewer 2
+   virt-viewer fw1
+ 
+
+생성된 가상머신이 외부로 연결이 되지 않는다면 시스템에서 forward 기능을 활성화 해 주어야하는데 설정된 파일은 아래와 같다.
+  /proc/sys/net/ipv4/ip_forward 
+ 
+ 위의 파일이 0 으로 되어 있다면 아래의 방법을 사용하여 1로 변경한다.
+
+ echo "1" > /proc/sys/net/ipv4/ip_forward
+
+
+ ---------- KVM 관리를 위한 명령어 --------------------------
+ virsh list         : 동작중인 가상머신을 확인
+ virsh list --all   : 동작중인, 중지중인 모든 가상머신을 확인
+
+[root@kvm1 ~]# virsh list --all
+ Id    Name                           State
+----------------------------------------------------
+ 2     fw1                            running
+ 3     fw2                            running
+
+ID, Name 은 unique 해야한다. 
+
+ virsh console fw1      : fw1 가상머신으로 콘솔연결하기
+ virsh destroy fw2      : fw2 를 강제로 종료한다.
+ virsh start fw2        : fw2 를 시작
+ virsh dumpxml fw2      : fw2 의 xml 파일을 출력(cat 으로 파일 보기와 같음) 
+ virsh edit fw2         : fw2 의 xml 파일을 편집(vi 로 파일 편집과 같음)
+ virsh undefine fw2     : fw2 를 삭제, 디스크는 삭제되지 않는다.
+ 
+ virsh net-list --all   : 동작중, 중지중인 모든 네트워크 확인
+ virsh net-edit default : default 네트워크 편집
+
+ 
+
+ kvm 네트워크
+
+  vmware            kvm
+ - bridge          bridge
+ - nat             nat
+ - host-only       isolated network
+
+
+ 새로운 isoloated 네트워크 만들기
+
+1. xml 파일 만들기
+[root@kvm1 kvmlab]# cat apple.xml 
+<network>
+  <name>apple</name>
+  <bridge name='virbr1'/>
+  <ip address='172.16.1.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='172.16.1.101' end='172.16.1.119'/>
+    </dhcp>
+  </ip>
+</network>
+[root@kvm1 kvmlab]# 
+
+
+2. 네트워크 설정 정의하기
+[root@kvm1 kvmlab]# virsh net-define apple.xml 
+Network apple defined from apple.xml
+
+[root@kvm1 kvmlab]# virsh net-list --all | grep apple
+ apple                inactive   no            yes
+[root@kvm1 kvmlab]# 
+
+3. 추가설정
+# virsh net-autostart apple
+Network apple marked as autostarted
+
+[root@kvm1 kvmlab]# virsh net-list --all
+ Name                 State      Autostart     Persistent
+----------------------------------------------------------
+ apple                active     yes           yes
+ default              active     yes           yes
+
+[root@kvm1 kvmlab]# 
+
+
+4. 동작중인 네트워크의 설정값 확인
+[root@kvm1 kvmlab]# virsh net-dumpxml apple
+<network>
+  <name>apple</name>
+  <uuid>6951686f-eaef-4976-bee0-67cd09b06074</uuid>
+  <bridge name='virbr1' stp='on' delay='0'/>
+  <mac address='52:54:00:45:45:ba'/>
+  <ip address='172.16.1.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='172.16.1.101' end='172.16.1.119'/>
+    </dhcp>
+  </ip>
+</network>
+
+[root@kvm1 kvmlab]# 
+
+
+
+5. 동작중인 가상머신과 새로 생성된 네트워크를 연결하기
+
+[root@kvm1 kvmlab]# virsh attach-interface --domain fw1 --source apple \
+> --type network --model virtio --config --live
+
+[root@kvm1 kvmlab]# virsh console fw1
+
+vyos login: vyos
+Password: test123
+
+vyos@vyos:~$ show int
+Interface        IP Address                        S/L  Description
+---------        ----------                        ---  -----------
+eth0             192.168.122.101/24                u/u  
+eth1             -                                 A/D  
+lo               127.0.0.1/8                       u/u  
+                 ::1/128
+vyos@vyos:~$ config
+vyos@vyos# set int eth eth1 add dhcp
+vyos@vyos# commit
+vyos@vyos# run show int
+
+eth1             172.16.1.112/24                   u/u  
+
+
+6. KVM1에 있는 가상머신 fw1 을 KVM2 로 live migration 하기
+
+
+[root@kvm1 ~]# virsh migrate --live fw1 qemu+ssh://kvm2/system --unsafe
+root@kvm2's password: 
+error: Network not found: no network with matching name 'apple'
+
+[root@kvm1 ~]# 
+
+
+ 과제 : 오류의 내용을 파악하고 이를 해결하여 정상적으로 live migration 이 가능하도록 하라!!!!
+
+
+ [오후 수업을 위한 준비]
+ 오후에는 CentOS7 를 이용하여 실제 웹서버를 동작 시켜보도록할 예정입니다.
+ 외부에서 접속도 가능하도록 할 계획이구요
+
+ storage 노드에서 cd /vm/util 로 들어가서 
+ # wget http://ftp.kaist.ac.kr/CentOS/7.9.2009/isos/x86_64/CentOS-7-x86_64-Minimal-2009.iso 
+
+ 하셔서 CentOS 를 다운로드 해 두세요~
+
+
+기존 eth0 은 IP 주소가 등록된 L3 Port 이므로 가상네트워크와는 별도의 네트워크로 분리된다.
+ 만약 가상의 스위치를 만들고 CentOS의 eth0 을 이 가상스위치에 연결하고 해당 가상스위치에 또다른 서버를 연결한다면 전체가 동일한 네트워크로 구성된다. 
+즉, ISP 에서부터 서버까지 동일 주소인 211.183.3.0/24 로 구성할 수 있다.
+
+
+cd /etc/sysconfig/network-scripts/
+network-scripts]# systemctl stop NetworkManager
+network-scripts]# systemctl disable NetworkManager
+cp ifcfg-eth0 ifcfg-br0
+vi ifcfg-br0
+
+TYPE=Bridge
+BOOTPROTO=none
+NAME=br0
+DEVICE=br0
+ONBOOT=yes
+IPADDR=211.183.3.101
+PREFIX=24
+GATEWAY=211.183.3.2
+DNS1=8.8.8.8
+NM_CONTROLLED=no
+
+vi ifcfg-eth0
+
+TYPE=Ethernet
+BOOTPROTO=none
+NAME=eth0
+DEVICE=eth0
+BRIDGE=br0
+ONBOOT=yes
+NM_CONTROLLED=no
+
+
+
+[확인]
+systemctl restart network  를 하여 br0 에 IP 주소 211.183.3.101 이 등록되어있는지 여부와 인터넷 연결 상태 확인
+
+
+새로운 가상머신 만들기
+
+[root@kvm1 ~]# virt-install --name websrv1 --vcpus 1 --ram 1024 \
+> --graphics vnc,port=5911 --network bridge=br0 --disk path=/vm/websrv1.img,size=20 --cdrom /vm/util/CentOS-7-x86_64-Minimal-2009.iso 
+
+
+현재 KVM1 에는 가상머신 websrv1  이 설치되어 있다.
+추가적으로 CentOS 이미지를 이용하여 cpu 1,ram 1G, disk 20GB , IP:211.183.3.112 로 지정한 가상머신의 이름 dnssrv 를 생성하라
+
+설치완료후 윈도우에서 ping 211.183.3.111, ping 211.183.3.112
+
+
+DNS서버는 대표적으로 아래와 같은 두가지 기능을 수행한다.
+
+chche name server : 자체적으로 관리하는 도메인은 없으며 요청이 들어왔을때 자신이 지정해 놓은 DNS 서버로 PC 대신 요청을 하는 징검다리 역할을 하는 DNS 서버이다. 별도의 기능을 하는 것은 아니고 단지, 대신!!! 도메인에 대한 IP주소를 얻어온 다음 해당 정보를 자신의 캐시에 담아두고 나중에 동일한 정보를 요청할 경우 자신의 캐시에서 정보를 전달해 주는 역할을 수행한다.
+
+master name server : 회사 자체적으로 사용하는 도메인을 관리하는 DNS 서버이며 서브도메인 등에 대한 정보를 zone  파일에 작성해 두고 이를 통해 서브도메인에 대한 IP 정보를 클라이언트에게 전달해 주는 역할을 수행한다. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

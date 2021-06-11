@@ -1,0 +1,202 @@
+컨테이너 오케스트레이션 도구
+- docker swarm(도커의 기본 프로젝트에 포함되어 있음) : 사용률이 증가추세
+- kubernetes(사실상 표준) : 1st
+- mesos(marathon과 함께 사용) by apache
+- openshift(by redhat) : 2nd
+
+runtime : 컨테이너를 만드는 도구
+- 도커 스웜은 docker 만을 이용한다
+- k8s 는 도커 스웜뿐만 아니라 다른 벤더사에서 만든 컨테이너 도구도 런 타임으로 사용할 수 있다. 
+
+auto-scale 이 가능하다
+각 노드의 cpu, ram 사용량을 확인하여 이에 기반한 scale out, scale in 이 가능하다.
+____________node-exporter_______
+            
+쿠버네티스에서 서비스 제공의 기본단위 : Pod(한 개이상의 컨테이너)
+           상위개념 : 레플리카 셋
+고정된 컨테이너 수만큼 생성, 운영,동작 : ReplicaSet
+           상위개념 : 디플로이먼트
+롤링 업데이트 : 동작중인 컨테이너를 서비스 중단없이 업데이트(by Deployment)
+       
+            "결국 우리가 해야할 일은 디플로이먼트 작성!"
+
+
+etcd : 클러스터 전체 구성도를 관리한다. -> 보통 일반적인 사용은 별도로 구축하지 않고 master 내에 구축한다. 
+master 가 한 대일 경우 master 가 다운되면 클러스터 전체 구성을 확인할 수 없을 뿐만 아니라 명령을 내릴 수 있는 노드가 없으므로 클러스터 동작이 불가하다. 이로인해 master 는 2 대 이상을 구성하는것이  일반적이다. 또한 etcd 도 전체 클러스터 정보가 포함되어 있으므로 2대 이상을 구성해 주는 것이 좋다
+
+kubectl get svc
+         cluster-ip
+
+
+
+
+
+replicaset 으로 scaling 구현가능하다 -> 의미하는 것은 
+노드의 cpu, ram 등을 확인하여 자동으로 확장, 수축 하는 것을 의미하는 것이 아니라
+replicaset 개수를 3 에서 5로 지정하면 자동으로 pod 가 5로 늘어나는 것을 의미한다.
+
+서비스 : pod 로의 접속 또는 외부로의 노출을 위해 필요한 서비스
+- cluster-ip : 외부로 노출되지 않는다. 클러스터 내부에서만 통신할 때 사용하는 IP
+ 
+- node-port : 외부 노출 가능. 트래픽 분산은 되지 않는다. 
+- LB : 일반적으로 기업에서 가장 많이 사용하는 서비스이며 트래픽 분산이 가능하다
+             on-premise 에서는 별도의 애플리케이션을 사용하여 기능을 구현하며, 퍼블릭 클라우드에서는 GCP,AWS  의 LB 를 바로 연결하여 사용할 수 있다. 
+
+
+Label
+포드 단위로 label 을 붙여 트래픽 분산 또는 지정된 포드로의 접속을 유도할 수 있다.
+
+
+GCP 에서 프로젝트 생성한 뒤, 연결해 두어야 할 API
+- Cloud Build API : 기존의 도커의 경우 이미지 생성 -> 업로드의 작업이 분리되어 있으나 Cloud Build 를 사용하면 이미지 생성 부터 GCP 내의 사설 저장소에 이미지를 업로드 하는 것 까지 한번에 진행할 수 있다.
+
+Cloud Source Repositories API : github 와 같이 소스 코드를 저장, 관리 할 수 있는 GCP 내의 코드 저장소
+
+Kubernetes Engine API : 쿠버네티스 클러스터 연결을 위한 API
+Container Registry API : GCP 내에 이미지를 저장 관리 할 수 있는 사설 저장소
+
+
+
+
+
+
+beomtaegg@cloudshell:~ (beomtaek-edustack)$ PROJECT_ID=$(gcloud config list project --format "value(core.project)")
+beomtaegg@cloudshell:~ (beomtaek-edustack)$ echo $PROJECT_ID
+beomtaek-edustack
+beomtaegg@cloudshell:~ (beomtaek-edustack)$ 
+
+
+혹시라도 apt 사용할 때 문제 발생시
+우선 터미널 여시고 모든 프로세스를 죽여줍니다~!
+1) sudo killall apt apt-get
+
+만일 진행중인 프로세스가 없다라고 뜨면, 아래와 같이 하나하나씩 디렉토리를 삭제해주세요.
+
+- sudo rm /var/lib/apt/lists/lock
+- sudo rm /var/cache/apt/archives/lock
+- sudo rm /var/lib/dpkg/lock*
+
+sudo dpkg --configure -a  를 하시고 sudo apt update
+
+
+
+출처: https://kgu0724.tistory.com/71 [병아리 개발자의 이야기]
+
+
+-------------- k8s 를 로컬에서 작업시에는 되도록이면 root !!-----------
+snap install google-cloud-sdk --classic
+snap install kubectl --classic
+PATH=$PATH:/snap/bin
+gcloud init <---- 화면에 보이는 경로로 이동하여 sdk 를 이용한 gcp 접근을 허용!
+gcloud container clusters get-credentials [본인클러스터이름] --zone asia-northeast3-b --project [본인 프로젝트 이름]      <--- 로컬 리눅스에서 k8s 클러스터로 연결
+kubectl get node
+
+
+-------------------- 
+쿠버네티스의 모든 서비스(pod,replica,de..,serivce,네트워크서비스 등등등) 의 모든 시스템 운용은 name 스페이스 내부에 pod   를 만들고 이를 이용하여 서비스를 제공한다.
+기본적으로 사용자가 만든 pod  는 default 에 작성되며 이를 삭제해도 무방하다. 별도의 네임스페이스를 만들고 거기에 필요한 포드를 배포할 수 있다.
+단, kube-system 은 쿠버네티스 전체 시스템을 운용하기 위한 포드 이므로 삭제(네임스페이스, 특정 포드)할 경우 쿠버네티스 전체 서비스에 영향을 미치므로 절~대 삭제해서는 안된다)  
+
+
+실습 준비
+apt-get install -y git curl wget
+git clone https://github.com/beomtaek78/btstore
+
+
+Configmap -> etcd 에 담아둔다. 이는 master, manager 가 etcd 와 직접 통신하므로 master  는 각 포드들의 변수 값을 한 번에 확인할 수 있다. configmap 의 값들은 모두 평문으로 저장된다. 
+- 포드들이 공통적으로 사용하는 변수 등을 지정할 때 사용한다. 
+
+Secret
+각 포드에서 사용하는 패스워드, api 연결을 위한 키 값등을 배포할 때 사용하며 이는 암호화 되어 저장되므로 볼 수는 없다. 
+
+포드, 레플리카 셋, 디플로이 먼트 등을 배포...
+1. yml 파일 만들기
+2. kubectl apply(또는 create) -f test.yml 
+3.(삭제) kubectl delete -f test.yml 
+
+------------- 수정해야 하는 부분 ----------------
+apiVersion: apps/v1
+
+spec:  아래 부분에 selector 가 필요하다.
+따라서.. replicas:3 아래에 다음과 같이 구성
+
+spec:
+  replicas: 3
+  selector:                    <-- 여기부터
+     matchLabels:
+          color: blue         <-- 여기까지 추가
+
+
+
+Quiz. 
+1.  nginx 이미지와 httpd(/var/www/html이 기본 디렉토리 아님!) 이미지를 본인의 사설 저장소에 업로드 하되, 아래의 내용을 포함해야 한다.(build 를 이용할 것)
+
+      nginx 의 기본 홈 디렉토리에 index.html ( HELLO NGINX)
+      httpd 의 기본 홈 디렉토리에 index.html (HELLO HTTPD)
+
+2. nginx 로 만든 deployment 는 label 을 web: nginx, httpd 로 만든 deployment 는 label 이 web: httpd 여야 한다. 둘다.. 공통 라벨로 system: server 가 붙는다
+
+3. service /LB 이용하여 nginx 가 기본적으로 외부에서 접속 가능해야 한다.
+     라벨 셀럭터를 web: httpd 로 하면 httpd 페이지가 열려야 한다.
+
+4. 끝난 분은 저에게 LB  주소를 알려주세요!!!
+인우 : 34.64.187.137
+태훈 : 34.64.171.198
+기석 : 34.64.223.146 
+                                              변경된 이미지로 동작중인 웹 페이지 바꾸기1
+                                               imageview:web-httpd -> imageview:web-httpd2
+                                              deploy.. 파일 내에서 이미지 명을 ... httpd2 로 바꾼 다음
+                                              kubectl deploy -f ... 
+
+                                              변경된 이미지로 동작중인 웹 페이지 바꾸기2
+                                              새로운 이미지 미리 저장소에 올려두고
+                                              kubectl set image deployment imageview:web-httpd=imageview:web-httpd2 --record
+
+                                       여기에서 "--record" 는 해당 명령이 실행된 포인트를 기록해 두었다가
+롤백할 때 사용할 수 있다.
+
+                                            
+해성 : 34.64.116.112
+정완 : 34.64.88.191
+nginx -> /usr/share/nginx/html 
+httpd -> /usr/local/apache2/htdocs
+혹시라도 httpd 이미지로 웹 서비스가 잘 안되시는 분들은 centos:7 이용하세요
+
+Dockerfile------------
+FROM centos:7
+RUN yum -y install httpd
+EXPOSE 80
+ADD index.html /var/www/html/index.html
+CMD httpd -D FOREGROUND
+
+실습순서
+
+1. deploy 파일 생성 (testdeploy.yaml)
+2. kubectl apply -f testdeploy.yaml
+3. kubectl get pod (동작상태 확인)
+그중에 아무 pod 이름 확인한 뒤
+4. kubectl describe pod "pod이름" | grep IP
+   동작중인 포드의 IP  확인
+5. 테스트 접속용 포드 생성
+kubectl run -it --image=centos:7 test
+쉘로 들어온 상태에서
+curl "nginx포드의 IP주소" 
+ 
+
+gcloud auth login    <--- sdk 연결 
+gcloud init                  <--- 프로젝트 선택
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+

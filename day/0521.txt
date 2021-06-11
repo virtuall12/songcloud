@@ -1,0 +1,548 @@
+CentOS : root 로그인 가능
+ubuntu : root 로그인 불가능
+
+3대의 노드에서 vi /etc/ssh/sshd_config 하여 32번째 줄의 해시를 해제하고 아래와 같이 루트로그인을 허용한다.
+PermitRootLogin yes
+
+ssh 를 재 실행한다.
+systemctl restart sshd
+
+master(211.183.3.100) 에서 아래의 내용을 통해 ansible 을 설치해 둔다.
+sudo apt-add-repository ppa:ansible/ansible
+sudo apt-get update
+sudo apt-get install ansible -y
+ansible --version
+
+설치가 완료되면 /etc/ansible/hosts 파일의 가장 아래에 
+
+211.183.3.101
+211.183.3.102
+211.183.3.103 
+
+을 추가한다.
+
+root@master:/home/docker# ansible all -m ping
+The authenticity of host '211.183.3.101 (211.183.3.101)' can't be established.
+ECDSA key fingerprint is SHA256:GlFm7anqUmF88L9fErxi1LRw+1VaUw45Gx6yUm66TBY.
+Are you sure you want to continue connecting (yes/no)? The authenticity of host '211.183.3.103 (211.183.3.103)' can't be established.
+ECDSA key fingerprint is SHA256:GlFm7anqUmF88L9fErxi1LRw+1VaUw45Gx6yUm66TBY.
+Are you sure you want to continue connecting (yes/no)? The authenticity of host '211.183.3.102 (211.183.3.102)' can't be established.
+ECDSA key fingerprint is SHA256:GlFm7anqUmF88L9fErxi1LRw+1VaUw45Gx6yUm66TBY.
+Are you sure you want to continue connecting (yes/no)? yes
+211.183.3.101 | UNREACHABLE! => {
+    "changed": false,
+    "msg": "Failed to connect to the host via ssh: Warning: Permanently added '211.183.3.101' (ECDSA) to the list of known hosts.\r\nroot@211.183.3.101: Permission denied (publickey,password).",
+    "unreachable": true
+}
+yes
+211.183.3.103 | UNREACHABLE! => {
+    "changed": false,
+    "msg": "Failed to connect to the host via ssh: Warning: Permanently added '211.183.3.103' (ECDSA) to the list of known hosts.\r\nroot@211.183.3.103: Permission denied (publickey,password).",
+    "unreachable": true
+}
+yes
+211.183.3.102 | UNREACHABLE! => {
+    "changed": false,
+    "msg": "Failed to connect to the host via ssh: Warning: Permanently added '211.183.3.102' (ECDSA) to the list of known hosts.\r\nroot@211.183.3.102: Permission denied (publickey,password).",
+    "unreachable": true
+}
+
+
+
+쿠버네티스의 대표적인 오브젝트 : 
+Pod, ReplicaSet, Deployment, Service 
+
+Pod : 서비스의 기본 단위, 한 개이상의 컨테이너로 구성된다. 
+          내부의 컨테이너는 포드의 동일 포트를 공유하여 사용할 수 있다.
+          보통은 한개의 컨테이너가 한개의 포드에 포함되지만 주 컨테이너 옆에서 
+          주 컨테이너의 로그수집, 모니터링 등과 같은 역할을 수행하는 컨테이너를 
+          함께 사용할 수 있다.(사이드카 컨테이너)
+RS : 고정된 수의 포드를 배치시킬 수 있다. 
+Deploy : RS + 롤링업데이트/롤백 ( --record )  ****
+서비스 : 외부와의 연결등을 위해 주로 사용되며 일반적으로 네트워크와 관련된 요소가 많다.
+  Kind: Service 
+   type:  - ClusterIP  : 클러스터 내부에서만 사용된다.
+               - nodePort  : 노드의 IP주소:포트 를 클러스터와 연결하여 외부와의 통신 가능
+               - loadBalance : 주로 CSP 에서 사용할 수 있으며 사전에 로드밸런서가 준비될 수 있는 환경에서만 가능하다. 
+
+
+Namespace : 
+- 컨테이너와 그에 관련된 리소스를 구분짓는 역할(그룹핑)
+- pod, rs,deploy, svc 를 별도로 묶어서 작업할 수 있는 논리적인 그룹
+- 네임스페이스 별로 별도의 리소스 용량 제한이 가능하다.  
+- 기본 작업 공간은 "default" 
+root@master:/home/docker# kubectl get ns
+NAME              STATUS   AGE
+default           Active   2d18h
+kube-node-lease   Active   2d18h
+kube-public       Active   2d18h
+kube-system       Active   2d18h
+testns            Active   16h
+root@master:/home/docker# kubectl delete ns testns
+namespace "testns" deleted
+root@master:/home/docker#
+
+- ResourceQuota 오브젝트를 사용하여 특정 네임스페이스에서 생성된 포드의 자원 사용량 제한
+- 리눅스 네임스페이스와를 별개
+docker
+namespace-작업공간분리 , cgroup-리소스제한
+
+- 네임스페이스를 만드는 두가지 방법
+1. yaml 
+root@master:~/0521# kubectl apply -f ns1.yaml
+namespace/develop created
+root@master:~/0521# kubectl get ns | grep dev
+develop           Active   10s
+root@master:~/0521#
+root@master:~/0521# cat ns1.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: develop
+root@master:~/0521#
+
+
+2. command 
+root@master:~/0521# kubectl create namespace sales
+namespace/sales created
+root@master:~/0521#
+root@master:~/0521# kubectl get ns
+NAME              STATUS   AGE
+default           Active   2d18h
+develop           Active   80s
+kube-node-lease   Active   2d18h
+kube-public       Active   2d18h
+kube-system       Active   2d18h
+sales             Active   11s
+root@master:~/0521#
+
+
+
+
+컨피그 맵(Configmap)
+- 설정값 중 일반적으로 변수(환경변수), 파일의 내용 등을 각 포드에 전달하고자 할 때 사용
+
+컨피그 맵 작성하기
+kubectl create configmap "이름" 설정값
+                             (또는 cm) 
+
+kubectl create configmap log-level-cmap --from-literal LOG_LEVEL=DEBUG
+kubectl create configmap start-k8s --from-literal k8s=kubernetes --from-literal container=docker
+
+apiVersion: v1
+kind: Pod
+metadata:
+ name: container-env-test
+spec:
+  containers:
+  - name: envctn
+    image: centos:7
+    args: ["tail", "-f", "/dev/null"]
+    envFrom:
+    - configMapRef:
+        name: log-level-cmap
+    - configMapRef:
+        name: start-k8s
+
+root@master:~/0521# kubectl apply -f cmap1.yaml
+pod/container-env-test created
+
+
+root@master:~/0521# kubectl exec container-env-test env
+...
+container=docker
+k8s=kubernetes
+LOG_LEVEL=DEBUG
+...
+
+
+2개 이상의 key: value 쌍이 있는 데이터에서 특정 key: value 만을 사용하고자 하는 경우에는 아래와 같이 구성할 수 있다.
+
+root@master:~/0521# vi cmap2.yaml
+root@master:~/0521# kubectl apply -f cmap2.yaml
+pod/container-env-test created
+root@master:~/0521#
+root@master:~/0521# kubectl exec container-env-test env | grep KEY
+KEY1=DEBUG
+KEY2=kubernetes
+root@master:~/0521# cat cmap2.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+ name: container-env-test
+spec:
+  containers:
+  - name: envctn
+    image: centos:7
+    args: ["tail", "-f", "/dev/null"]
+    env:
+    - name: KEY1
+      valueFrom:
+        configMapKeyRef:
+          name: log-level-cmap
+          key: LOG_LEVEL
+    - name: KEY2
+      valueFrom:
+        configMapKeyRef:
+          name: start-k8s
+          key: k8s
+root@master:~/0521#
+
+
+특정 파일에 cmap 적용하기 (cmap을 파일에 마운트하는 것)
+
+root@master:~/0521# cat cmap3.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+ name: container-env-test
+spec:
+  containers:
+  - name: envctn
+    image: centos:7
+    args: ["tail", "-f", "/dev/null"]
+    volumeMounts:
+    - name: cmap-volume
+      mountPath: /etc/config
+
+  volumes:
+  - name: cmap-volume
+    configMap:
+      name: start-k8s
+
+[확인]
+root@master:~/0521# kubectl exec container-env-test  -- ls -l /etc/config
+total 0
+lrwxrwxrwx 1 root root 16 May 21 02:36 container -> ..data/container
+lrwxrwxrwx 1 root root 10 May 21 02:36 k8s -> ..data/k8s
+root@master:~/0521#
+root@master:~/0521# kubectl exec container-env-test  -- cat /etc/config/k8s
+kubernetes
+root@master:~/0521#
+root@master:~/0521# kubectl exec container-env-test  -- cat /etc/config/container
+docker
+root@master:~/0521#
+root@master:~/0521#
+
+
+ 위와 같이 cofigmap 은 주로 변수 를 사전에 정의하고 이를 각 포드에 전달하여 포드에서 개발에 참여하는 모든 개발자들이 동일한 환경변수를 사용할 수 있도록 해 주는 것을 configmap 이라고 부른다. 
+
+
+시크릿 
+ssh 키, 비밀번호와 같이 중요정보 특히 암호화가 필요한 데이터를 각 포드에 전달하여 사용할 경우 시크릿을 사용한다. 구성 방법등은 configmap 과 거의 동일하다. 
+
+
+root@master:~/0521# kubectl create secret generic my-password \
+> --from-literal password=test123
+secret/my-password created
+root@master:~/0521#
+
+--from-literal 대신 --from-file , --from-env-file
+
+root@master:~/0521# echo password1 > pw1
+root@master:~/0521# echo password2 > pw2
+root@master:~/0521#
+root@master:~/0521# ls
+cmap1.yaml  cmap2.yaml  cmap3.yaml  mydeploy.yaml  ns1.yaml  pw1  pw2
+root@master:~/0521#
+root@master:~/0521# kubectl get secret
+NAME                  TYPE                                  DATA   AGE
+default-token-c9l95   kubernetes.io/service-account-token   3      2d19h
+my-password           Opaque                                1      2m2s
+root@master:~/0521#
+root@master:~/0521# kubectl create secret generic password12 --from-file pw1 --from-file pw2
+secret/password12 created
+root@master:~/0521#
+root@master:~/0521# kubectl get secret
+NAME                  TYPE                                  DATA   AGE
+default-token-c9l95   kubernetes.io/service-account-token   3      2d19h
+my-password           Opaque                                1      2m57s
+password12            Opaque                                2      5s
+root@master:~/0521#
+
+root@master:~/0521# kubectl get secret my-password -o yaml
+apiVersion: v1
+data:
+  password: dGVzdDEyMw==
+kind: Secret
+metadata:
+  creationTimestamp: "2021-05-21T02:49:44Z"
+  name: my-password
+  namespace: default
+  resourceVersion: "75807"
+  uid: 91b4c658-cd0b-4331-9ca3-afcd4e14afd6
+type: Opaque
+root@master:~/0521#
+root@master:~/0521# echo dGVzdDEyMw== | base64 -d
+test123root@master:~/0521#
+root@master:~/0521#
+root@master:~/0521# echo test123 | base64
+dGVzdDEyMwo=
+root@master:~/0521# echo dGVzdDEyMwo= | base64 -d
+test123
+root@master:~/0521# kubectl get secret password12 -o yaml
+apiVersion: v1
+data:
+  pw1: cGFzc3dvcmQxCg==
+  pw2: cGFzc3dvcmQyCg==
+kind: Secret
+metadata:
+  creationTimestamp: "2021-05-21T02:52:36Z"
+  name: password12
+  namespace: default
+  resourceVersion: "76063"
+  uid: e671d20c-417e-4ef9-b332-47a3826b070c
+type: Opaque
+root@master:~/0521#
+
+root@master:~/0521# kubectl apply -f secret1.yaml
+pod/secret-env-test created
+root@master:~/0521#
+root@master:~/0521# cat secret1.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: secret-env-test
+spec:
+  containers:
+  - name: secret-ctn
+    image: centos:7
+    args: ["tail", "-f", "/dev/null"]
+    envFrom:
+    - secretRef:
+          name: my-password
+root@master:~/0521#
+
+
+secret 을 env 또는 volume 으로 연결하여 사용할 경우에는 복호화 된 상태에서 확인 가능하다.
+
+https://kubernetes.io/ko/docs/tasks/configure-pod-container/pull-image-private-registry/
+
+[테스트]
+미리 각 노드에서 기존에 dockerhub 에서 다운 받은 이미지를 삭제한 뒤,
+아래의 yaml 파일을 만들어 배포한다
+
+kubectl create secret docker-registry registry-key --docker-username=beomtaek78 --docker-password="도커허브패스워드"
+
+kubectl create secret docker-registry registry-key --docker-username=appdata1219 --docker-password=P@$$w0rd0106
+
+root@master:~/0521# cat mydeploy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-v1-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+     color: black
+  template:
+    metadata:
+      name: my-nginx-v1
+      labels:
+        color: black
+    spec:
+      containers:
+      - name: my-nginx-ctn-v1
+        image: beomtaek78/edustack:1.0
+        ports:
+        - containerPort: 80
+          protocol: TCP
+      imagePullSecrets:
+      - name: registry-key
+
+
+
+secret 도 미리 만들어 두어야 한다. 이때 username, password 만(server는 제외) 입력한다
+
+root@master:~/0521# kubectl get pod,deploy
+NAME                                READY   STATUS    RESTARTS   AGE
+pod/container-env-test              1/1     Running   0          136m
+pod/my-v1-deploy-6c845bbf4b-5lt9k   1/1     Running   0          2m1s
+pod/my-v1-deploy-6c845bbf4b-8tqxz   1/1     Running   0          2m1s
+pod/my-v1-deploy-6c845bbf4b-pww87   1/1     Running   0          2m1s
+
+NAME                           READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/my-v1-deploy   3/3     3            3           2m1s
+root@master:~/0521#
+
+
+PV/PVC(퍼시스턴트 볼륨/퍼시스턴트 볼륨 클레임)
+
+이미지를 이용하여 컨테이너(포드) 를 배포했을 경우 컨테이너 내부에 저장된 데이터, 데이터베이스는 컨테이너가 삭제될 경우 동일하게 삭제되어 별도로 접근이 불가능하게된다. 이를 방지하기 위하여 사용하는 것을 퍼시스턴트 볼륨(영구볼륨) 이라고 하며 이미 도커에서 비슷한 내용을 우리는 접해본 적이 있다.
+
+ 1. 호스트와의 마운트(NFS)를 사용한다
+            /test1(노드):/test(컨테이너)
+
+ 2. 컨테이너 간 연결 (사용하지 않는다)
+
+ 3. 별도의 "도커 볼륨" 을 컨테이너의 특정 디렉토리와 연결하는 방법(iSCSI)
+
+
+
+
+쿠버네티스는 특정 노드에서만 데이터를 보관해 저장하면 포드가 다른 노드로 옮겨졌을 경우, 또는 연결하고자 하는 새로운 포드가 타 노드에서 생성되었을 경우 해당 데이터를 사용할 수 없게된다. 
+따라서 특정 노드에서만 포드를 실행해야 하는 상황이 생길 수 있다. 이를 해결 할 수 있는 방법이 바로 "퍼시스턴트 볼륨"
+네트워크로 연결해 사용할 수 있는 PV  의 대표적인 예는 NFS, EBS, Ceph, GlusterFS 등이 있다.
+
+쿠버네티스는 PV 를 사용하기 위한 자체 기능을 제공하고 있다. 
+
+ NFS 서버 준비 -> 방화벽 해제 -> /etc/exports 에 아래 내용 추가
+   /k8s     211.183.3.0/24(rw,sync,no_root_squash) 
+*사전에 /k8s 디렉토리를 만들어 두어야 한다.
+
+ -> nfs-server 실행(또는 재실행)
+
+
+볼륨 마운트 하기
+1. 로컬 호스트와 연결하기
+2. 원격지의 nfs-server 이용하기
+
+root@master:~/0521# kubectl apply -f deployvol.yaml
+deployment.apps/my-v1-deploy created
+root@master:~/0521# cat deployvol.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-v1-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+     color: black
+  template:
+    metadata:
+      name: my-nginx-v1
+      labels:
+        color: black
+    spec:
+      containers:
+      - name: my-nginx-ctn-v1
+        image: nginx:1.10
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        volumeMounts:
+        - name: nodepath
+          mountPath: /etc/localvol
+        - name: nfspath
+          mountPath: /etc/nfsvol
+
+      volumes:
+      - name: nodepath
+        hostPath:
+          path: /tmp
+      - name: nfspath
+        nfs:
+          path: /k8s
+          server: 211.183.3.99
+
+
+kubectl exec -it [3개의 포드중 하나의 포드 이름] -- sh
+root@master:~/0521# kubectl exec -it my-v1-deploy-f769df8cb-9vrcd -- sh
+# ls /etc/*vol  <---- 생성된 2개의 volume 확인하기
+/etc/localvol:  <--- 로컬 노드와 연결한 볼륨(포드가 배치된 노드의 /tmp 와 연결되었음)
+ansible_command_payload_blly95vj
+config-err-FCLvpE
+snap.gnome-calculator
+snap.gnome-characters
+snap.gnome-logs
+snap.gnome-system-monitor
+ssh-dc8ty50Lq5ZD
+systemd-private-0e7fbbc54bf54e80be155251b930e031-ModemManager.service-Dy9Rqs
+systemd-private-0e7fbbc54bf54e80be155251b930e031-bolt.service-2DCDhA
+systemd-private-0e7fbbc54bf54e80be155251b930e031-colord.service-BTBJwv
+systemd-private-0e7fbbc54bf54e80be155251b930e031-rtkit-daemon.service-rfygLu
+systemd-private-0e7fbbc54bf54e80be155251b930e031-spice-vdagentd.service-bOKUuk
+systemd-private-0e7fbbc54bf54e80be155251b930e031-systemd-resolved.service-pvBLAs
+systemd-private-0e7fbbc54bf54e80be155251b930e031-systemd-timesyncd.service-WGjFWc
+
+/etc/nfsvol:  <-- 원격지 nfs 서버와 연결한 볼륨 
+#
+
+이후에  nfs 서버에서 /k8s 에 파일을 하나 만들어 두고 포드에서 확인해 본다.
+
+# cat /etc/nfsvol/test.txt
+HELLO
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+시크릿(Secret)
+- 설정값 중에서 보안을 요하는 패스워드 와 관련된 설정을 포드에 전달하고자 할 때 주로 사용
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

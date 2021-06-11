@@ -1,0 +1,244 @@
+클라우드 컴퓨팅 : '빌려쓰기' 
+서비스 제공을 위해 필요한 물리적 인프라(서버, 네트워크 장비, 방화벽..) , 개발환경(프로그래밍언어, 데이터베이스, 웹서버..) , 애플리케이션(포토샵, 웹서비스...) 클라우드라는 공간에 배치해 두고 사용자는 이를 필요한 만큼 빌려사용하는 것.
+
+클라우드 컴퓨팅의 분류 (무엇을 빌려쓰는가?)
+: 반드시 가상화를 동반해야하는 것은 아니지만, 가상화를 도입하여 사용할 경우 공급자 입장에서 운영이 수월해 진다. 또한 추가적인 잇점(무중단 서비스, 지역간 이동이 가능하다-Live Migration)이 있다
+
+- SaaS (소프트웨어 자체 - salesforce.com
+- PaaS (개발환경 - docker, kubernetes
+- IaaS (컴퓨팅 자원 제공-CPU,RAM,HDD) - 
+      OpenStack, KVM, VMware vSphere, aws ec2/rds, gcp
+
+
+
+OpenStack 의 대표적인 서비스
+1. keystone (인증서비스, 데이터베이스-MariaDB)
+2. glance (이미지 서비스)
+3. nova  (컴퓨팅 서비스 - 하이퍼바이저) 
+4. horizon (대시보드-GUI서비스제공)
+5. neutron (네트워크 서비스, 라우터,스위치,방화벽,LB)
+6. cinder (Block Storage 서비스 - 디스크제공)
+7. swift (Storage 서비스 - Object Storage : 사용자별 공간[컨테이너] 제공)
+
+오픈스택의 기본 구조
+
+
+
+
+                                                                          nova          neutron    cinder, switft
+   오픈스택에서 제공하는 서비스  구분(  compute, network, storage )
+
+
+
+오픈스택의 버전
+Austin : nova(computing 서비스, 가상머신->인스턴스 생성, 스토리지생성 : 하이퍼바이저 -> default hypervisor : KVM  , 상용버전인 VMware 의 ESXi 를 사용할 수도 있다), 
+                 swift(Storage 서비스 각 사용자별로 일정 공간을 제공하는 서비스, object storage)
+Bexar
+Cactus
+Diablo
+ Pike, Queens, .. Rocky ,...    전 세계에 있는 아름다운 "길" 
+
+
+
+추가 서비스 
+Magnum (매그넘) - 컨테이너 클러스터링(swarm, kubernetes)
+-> 불안정한 서비스!!! 
+
+오픈스택의 대표적인 설치방법
+1. 수동설치 : 패키지 설치,  DB 등록, 서비스 실행 등을 일일이 직접해야 함
+                         정밀한 서비스 구축이 가능하다.
+2. 자동화(툴 이용) : Packstack(RH), DevStack(Ubuntu)
+                        우리실습 - Packstack(비대화식+자동화툴)
+
+
+----------------------------------
+리눅스 설치 완료후 해야할 일
+1. (3노드에서) 
+systemctl stop firewalld
+systemctl disable firewalld
+
+setenforce 0
+vi /etc/selinux/config 에서  SELINUX=enforcing 을 SELINUX=disabled 로 변경
+
+systemctl stop NetworkManager
+systemctl disable NetworkManager
+
+yum -y update
+
+2. (3노드에서)
+모든 노드에 아래의 내용을 /etc/hosts 의 가장 아래에 등록
+
+192.168.1.100	control
+192.168.1.101	compute1
+192.168.1.102	compute2
+
+3. (3노드에서)
+인터페이스의 이름을 아래와 같이 변경한다.
+
+ens32 -> eth0
+ens33 -> eth1
+3.1
+vi /etc/default/grub 에서 6번째 행의 마지막에 net.ifnames=0 biosdevname=0 입력
+
+
+      6 rhgb quiet net.ifnames=0 biosdevname=0"
+
+3.2 
+cd /etc/sysconfig/network-scripts 
+mv ifcfg-ens32 ifcfg-eth0
+mv ifcfg-ens33 ifcfg-eth1
+
+3.3 
+eth0, eth1 을 아래와 같이 변경한다
+eth0---------------------------
+TYPE=Ethernet
+BOOTPROTO=none
+NAME=eth0
+DEVICE=eth0
+ONBOOT=yes
+IPADDR=10.5.107.100
+PREFIX=8
+GATEWAY=10.0.0.1
+DNS1=8.8.8.8
+NM_CONTROLLED=no
+eth1----------------------------
+TYPE=Ethernet
+BOOTPROTO=none
+NAME=eth1
+DEVICE=eth1
+ONBOOT=yes
+IPADDR=192.168.1.100
+PREFIX=24
+NM_CONTROLLED=no
+
+4. 변경된 내용을 반영한다
+ grub2-mkconfig -o /boot/grub2/grub.cfg
+ reboot
+
+5. 추가 필요 패키지 설치
+yum -y install vim curl wget git net-tools
+yum -y update
+
+6. vi ~/.bashrc  에 
+alias vi='vim' 추가하고 나와서
+su
+
+
+Openstack 설치 (using packstack) [control 노드에서만 진행]------------------
+
+프로젝트 데모 영상
+A조. https://youtu.be/oipIi8rBV4g
+B조. https://youtu.be/QHvZnpl3dqY
+C조. https://youtu.be/sks-pak-hQM
+D조. https://youtu.be/eV84ZOxsOTs
+
+
+프로젝트 발표 영상 
+A조. https://youtu.be/_dJa8Zbyfzk
+B조. https://youtu.be/Zxg66TehzKE
+C조. https://youtu.be/cH0VRye0EKs
+D조. https://youtu.be/0tc6KG68tSU
+
+
+1. 오픈스택 버전 Rocky 를 설치하기 위한 저장소 목록을 설치
+[root@control ~]# yum -y install centos-release-openstack-rocky
+[root@control ~]# yum -y update
+
+2. 스크립트 툴을 이용한 자동 설치를 위해 packstack 을 설치한다.
+[root@control ~]# yum -y install openstack-packstack
+
+3. packstack 을 이용하여 설치를 위한 스크립트 작성
+[root@control ~]# packstack --gen-answer-file=answer.txt
+[root@control ~]# ls
+anaconda-ks.cfg  answer.txt
+[root@control ~]#
+
+4. answer.txt 파일 편집하기
+
+
+  94 CONFIG_CONTROLLER_HOST=192.168.1.100
+  97 CONFIG_COMPUTE_HOSTS=192.168.1.101,192.168.1.102
+ 101 CONFIG_NETWORK_HOSTS=192.168.1.100
+ 137 CONFIG_STORAGE_HOST=192.168.1.100
+ 141 CONFIG_SAHARA_HOST=192.168.1.100
+
+ 782 CONFIG_LBAAS_INSTALL=y
+
+ 302 CONFIG_MARIADB_PW=test123
+
+ 326 CONFIG_KEYSTONE_ADMIN_PW=test123
+
+ 329 CONFIG_KEYSTONE_DEMO_PW=demo
+
+5. 설치 시작
+[root@control ~]# packstack --answer-file=answer.txt
+
+
+
+사용자-> 로그인->Project (테넌트; 클라우드 환경 => 멀티 테넌시(한 공간에 여러 테넌트가 서로에게 영향을 주지 않고 공존하는 공간) ) -> KeyStone 이 인증성공! -> 사용자는 클라우드 환경을 이용할 수 있는 TOKEN 을 발급받는다
+ ---엔드포인트(서비스와 사용자를 연결하는 주소)<----->서비스
+
+ 역할 : 로그인에 성공한 사용자는 클라우드 환경내에서 이용할 수 있는 또는 제어할 수 있는 서비스의 범위를 부여 받는다. ; Role(역할) -> RBAC(Role Based Access Control) 
+ 
+ 도메인 : 사용자,그룹 + 프로젝트
+
+ Keystone 서비스 -> 사용자, 그룹, 프로젝트 등을 모두 Mariadb 에 저장하고 인증 수행은 LDAP 을 이용한다. 
+
+
+
+6. 세션 연장을 위한 timeout 조정하기
+
+[root@control ~(keystone_admin)]# vi /etc/openstack-dashboard/local_settings
+
+794 SESSION_TIMEOUT = 14400
+
+[root@control ~(keystone_admin)]# vi /etc/keystone/keystone.conf
+2836 expiration=14400
+
+
+[root@control ~(keystone_admin)]# source keystonerc_admin
+[root@control ~(keystone_admin)]# systemctl restart httpd
+
+
+7.  이미지 바꾸기
+# cd /usr/share/openstack-dashboard/openstack_dashboard/static/dashboard/img
+
+[root@control img(keystone_admin)]# mv logo-splash.svg logo-splash.svg.org
+[root@control img(keystone_admin)]# mv logo.svg logo.svg.org
+[root@control img(keystone_admin)]# wget http://10.5.1.100/logo.svg
+[root@control img(keystone_admin)]# wget http://10.5.1.100/logo-splash.svg
+[root@control img(keystone_admin)]# systemctl restart httpd
+
+
+8. glance 에 이미지 등록하기
+
+[root@control ~(keystone_admin)]# ll
+total 359296
+-rw-------. 1 root root      1579 May 12 11:54 anaconda-ks.cfg
+-rw-------  1 root root     51762 May 12 14:33 answer.txt
+-rw-r--r--  1 root root 367853568 May  9 01:36 bionic-server-cloudimg-amd64.img
+-rw-------  1 root root       364 May 12 15:00 keystonerc_admin
+-rw-------  1 root root       306 May 12 15:00 keystonerc_demo
+[root@control ~(keystone_admin)]#
+[root@control ~(keystone_admin)]#
+[root@control ~(keystone_admin)]# openstack image create "UBUNTU1804" --file bionic-server-cloudimg-amd64.img --disk-format qcow2 --container-format bare --public && openstack image list
+
+
+
+[root@control ~(keystone_admin)]# openstack server migrate 144721d1-6b46-4427-afba-0254fdf6c926 --live compute2 --block-migration
+
+ 공유스토리지로 연결되어 있는 경우에는 라이브마이그레이션이 정상적으로 동작하지만 만약 공유 스토리지가 없다면 디스크와  xml 파일을 전체다 옮기는 마이그레이션이 수행되어야 한다. 기본 마이그레이션은 xml 만 이동시키는 것이고 --block-migration 은 디스크를 이동 시키는 것이다. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
