@@ -1,0 +1,18 @@
+heat_template_version: 2015-04-30 
+resources:
+        Group_of_VMs:
+                type: OS::Heat::ResourceGroup
+                properties:
+                        count: 2
+                        resource_def:
+                                type: OS::Nova::Server
+                                properties:
+                                        name: my_vm%index%
+                                        flavor: m1.small
+                                        image: centoscustomize
+                                        networks:
+                                                - network: private01
+                                        key_name: test
+                                        security_groups:
+                                                - test
+                                                - default

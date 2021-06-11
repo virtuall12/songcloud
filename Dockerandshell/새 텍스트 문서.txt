@@ -1,0 +1,108 @@
+read -p "select install OS
+1. CentOS 7.8
+2. ubuntu 18.04 
+
+: " vm_os
+
+read -p "select flavor 
+1. CPU 1, RAM 1G, DISK 10G
+2. CPU 2, RAM 2G, DISK 20G
+
+: " vm_flavor
+
+read -p "ROOT PASSWORD : " vm_passwd
+
+read -p "select NETWORK : 
+1. Bridge
+2. NAT (Default)
+3. isolated (testnet)
+
+: " vm_net
+
+if [ ${vm_os} -eq 1 ]; then
+   vm_os1=centos-7.8
+else
+   echo "no data"
+fi
+
+if [ ${vm_flavor} -eq 1 ]; then
+        vm_flavor1="CPU 1, RAM 1G, DISK 10G"
+else
+        echo "no data"
+fi
+
+if [ ${vm_net} -eq 1 ]; then
+        vm_net1=Bridge
+
+elif [ ${vm_net} -eq 2 ]; then
+   vm_net1=NAT
+      
+elif [ ${vm_net} -eq 3 ]; then
+   vm_net1=host_only
+else
+   echo "no data"
+fi 
+
+echo " 
+- ${vm_os1}
+- ${vm_flavor1}
+- ${vm_passwd}
+- ${vm_net1}"
+
+read -p "START INSTALL ?? Y|N : " vm_start
+
+
+export LIBGUESTFS_BACKEND=direct
+
+case $vm_start in
+
+ y | Y )
+   virt-builder ${vm_os1} --format qcow2 --size ${vm_flavor}0G -o /vm/util/centos${vm_os}11.qcow2 --root-password password:${vm_passwd}
+
+virt-install --name ${vm_os1} --vcpus ${vm_flavor} --ram 1024 --graphics none --serial pty --console pty --disk path=/vm/util/centos${vm_os}11.qcow2 --import
+   ;;
+
+ * )
+   echo "install STOP!!"
+   ;;
+esac
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+#!/bin/bash
+
+mysql testdb -u user1 -puser1 -e 'select * from systemenv'
+mysql testdb -u user1 -puser1 -e "insert into systemenv(hostname,username,home) values ('$HOSTNAME','$USERNAME','$HOME')"
+~                                                                          
+~          
+
+
+[root@kvm1 ~]# cat test.sh 
+#!/bin/bash
+
+mysql testdb -u user1 -puser1 -e "insert into virtual(hostname,vmname,vcpus,memory) values ('$HOSTNAME','$vmname','$vcpus,','$memory')"
+
+
+read -p "가상머신의 이름은? " vm
+read -p "cpu 개수는?" vcpus
+read -p "메모리는?" memory
+
+mysql testdb -u user1 -puser1 -e 'select hostname as HOST명, vmname as VM이름, vcpus as CPU개수, memory as RAM사이즈(MB) from virtual'
+
+
+
+
+if [ $? -eq 0 ]
+then	
+	echo "--------------successfully inserted--------------"
+else
+	echo "wrong input detected!!!"
+	exit 0
+fi
+
+mysql testdb -u user1 -puser1 -e 'select * from virtual'
+[root@kvm1 ~]# 
+
+
+

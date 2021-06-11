@@ -1,0 +1,76 @@
+
+ vim Dockerfile 
+ ls
+ docker build -t web:0.4 .
+ docker container run -d -p 8085:80 web:0.4
+
+docker container ls | grep mariadb01
+ docker container inspect b6ea0b2cb670 | grep IPA 
+ mysql -h 172.17.0.4 -u root -ptest123
+docker container run -d -p 33062:3306 -e MYSQL_ROOT_PASSWORD=test123 -e MYSQL_DATABASE=sqldb mariadb/server:10.0
+ $port = rand(33000,33999);
+docker container inspect mariadb01 | grep IPA
+docker container run -d --privileged --name centos8 -p 8090:80 web:0.6 init
+docker exec -it centos8 /bin/bash
+
+도커 사설저장소 만들고 로컬저장소에 있는 이미지 삭제 후 사설저장소에서 끌고와 실행시키기!
+cat Dockerfile
+FROM centos:7
+RUN yum -y install httpd php php-mysql mariadb-client mysql
+ADD index.html /var/www/html/index.html
+EXPOSE 80
+CMD /usr/sbin/httpd -D FOREGROUND 
+docker image tag nginx2 localhost:5000/nginxv2
+docker image push localhost:5000/nginxv2
+docker image rm localhost:5000/nginxv2
+docker image pull localhost:5000/nginxv2
+ docker container run -d -p 8040:80 localhost:5000/nginxv2
+docker network inspect root_default
+docker-compose ps
+docker container run -d --memory="1g"nginx
+docker container run -d --memory=200m --memory-swap=500m nginx
+      --cpus: 직관적으로 CPU의 개수를 직접 지정
+docker container run -d --cpus=0.5 nginx
+
+compose 파일
+curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+docker-compose -v
+
+------------------- 실습 docker-compose.yml 파일 ------------------------------
+version: '3.1'
+
+services:
+
+  wordpress:
+    image: wordpress   #base이미지
+    restart: always       # docker 데몬이 재부팅 되더라도 항상 자동으로 실행된다
+    ports:
+      - 8080:80	     # -e 옵션과 동일 	
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: exampleuser
+      WORDPRESS_DB_PASSWORD: examplepass
+      WORDPRESS_DB_NAME: exampledb
+    volumes:
+      - wordpress:/var/www/html       #로컬에 wordpress 디스크 (볼륨)를 만들고 이를 컨테이너에 부착
+    depends_on:
+      - db        		           # 실행 순서를 결정한다. db가 완전히 안정적으로 동작한 뒤에 실행되는 것은 아님. 그냥 실행 순서만 결정 			
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: exampledb
+      MYSQL_USER: exampleuser
+      MYSQL_PASSWORD: examplepass
+      MYSQL_ROOT_PASSWORD: test123
+    volumes:
+      - db:/var/lib/mysql
+
+volumes:
+  wordpress:
+  db:
+
+# 둘 사이의 연결은 links 필요없이 그냥 연결된다.
+------------------------------------------------------------------------
