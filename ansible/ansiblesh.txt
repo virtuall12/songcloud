@@ -1,0 +1,22 @@
+#!/bin/bash
+#apt-get install 혹은 yum install로 expect 설치 후 사용할것
+echo "========================"
+echo "|[Ansible Shell Script]|"
+echo "========================"
+echo ""
+
+#read -p "Order To  ?: " a
+read -p "Order  ?: " b
+echo ""
+
+
+echo "================result==================="
+expect << EOF
+spawn ansible all -m shell -a "$b" -k
+expect "password"
+send "test123\n"
+#sleep 1
+#send "test123\n"
+expect eof
+EOF
+echo "========================================="

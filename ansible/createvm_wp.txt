@@ -1,0 +1,44 @@
+   <style>
+        #sectiontest { position: absolute;  bottom :0; right:25px; top: 250px; width:75%; height: 50%;}
+        </style>
+<?php
+        $menutitle="워드프레스 서비스 신청";
+        include 'include/menu.php';
+?>
+<div style="text-align:center;">
+<div id="sectiontest">
+
+<?php
+
+$vmname=$_POST['vmname'];
+$flaver=$_POST['flaver'];
+$userid=$_POST['userid'];
+$dbuser=$_POST['dbuser'];
+$dbpass=$_POST['dbpass'];
+$dbdb=$_POST['dbdb'];
+$sship=getenv('kvmip1');
+$sshpasswd=getenv('kvmpasswd');
+?>
+<h2> 서비스 설치 완료 </h2>
+<img src="img/done.png" style="width:260px; height: 260px;"/>
+
+<h4>
+<?php
+echo "<br>- 서비스 신청 정보 -<br><br>";
+echo "유저명 : ".$userid."<br>";
+echo "서비스 종류 : 워드프레스"."<br>";
+echo "서비스명 : ".$vmname."<br>";
+echo "선택 flaver : ".$flaver."<br>";
+
+shell_exec("sshpass -p $sshpasswd ssh -T -o StrictHostKeyChecking=no root@$sship 'sh installvm_wp.sh $vmname $flaver $userid $dbuser $dbpass $dbdb'");
+
+?>
+</h4>
+<br>
+<form action="inslist_user.php">
+&nbsp;&nbsp;<input type="button" value="돌아가기" onClick="location.href='selectservice.php'" style="font-size : 15px;">
+                        &nbsp;&nbsp;&nbsp;&nbsp;<input type="submit" value="서비스 목록" style="font-size : 15px;">
+</form>
+
+</div>
+</div>
